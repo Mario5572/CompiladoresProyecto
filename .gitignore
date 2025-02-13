@@ -1,1 +1,2 @@
 ./lexico
+./lex.yy.c

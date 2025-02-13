@@ -1,0 +1,16 @@
+// Calculadora
+main (){
+    $y = 1;
+    $z = 10;
+    x = x*y - 30 / 2;
+    @#-
+    print("HOLA MUNDO\n");
+    int a = 5;
+    if(javi = tonto){
+        print("Soy tonto");
+    }
+    read("notas de javi de conjuntos")
+    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    2122222222
+    2147483648
+}

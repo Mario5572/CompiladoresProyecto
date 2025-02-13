@@ -7,7 +7,7 @@
 
 letra [a-zA-Z]
 digito [0-9]
-errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-]+ 
+errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-\?:]+ 
 
  /* Opcion para contabilizar lineas */
 

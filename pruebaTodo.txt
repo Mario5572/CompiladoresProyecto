@@ -1,0 +1,21 @@
+main(){
+
+//SINTAXIS CORRECTA DEL LENGUAJE
+
+    // Declaracion de variables
+    int i=0;
+    const constante = 2939;
+    var miString = "never gonna give you up"
+    // Control de flujo
+    if(condicion){
+        print(2+3)
+        print(miString)
+    }
+    else{
+        print(2-3)
+        print("no")
+        print(miString)
+    }
+
+
+}

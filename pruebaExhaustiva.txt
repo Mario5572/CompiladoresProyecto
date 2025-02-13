@@ -1,0 +1,94 @@
+// ==================================
+// TEST 1: Código válido completo
+// ==================================
+
+// Comentario de línea correcto
+/* Comentario de bloque correcto */
+
+main(){
+    // Declaración de variables
+    var x = 10;
+    int i=0;
+    const y = -999;
+    var mensaje = "Hola \"Mundo\" \n con salto de línea"; 
+    // Prueba de comillas escapadas y escape \n
+
+    print(mensaje); // Imprime la cadena anterior
+
+    // Uso de if/else
+    if(x){
+        print(x);
+    } else {
+        print(y);
+    }
+
+    // Uso de operador ?: (ternario simplificado en miniC)
+    print(x ? y : 0);
+
+    // Uso de while (aunque internamente no haya operadores relacionales,
+    // la expresión entera se considera booleana en C para 0 o no-0)
+    while(i){
+        print(i);
+        i = i - 1;
+    }
+    
+    i = 2;
+    while(i){
+        i = i - 1;
+        read(x); // uso de 'read'
+    }
+
+    print("Fin del bloque válido.\t\t"); // \t tabulaciones
+}
+
+// ==================================
+// TEST 2: Casos incorrectos
+// ==================================
+
+// 2.1. Identificador que empieza por dígito (no permitido)
+9identificador = 123;
+
+// 2.2. Identificador demasiado largo (más de 32 caracteres)
+var supercalifragilisticoespiralidosoVariableEterna123 = 1;
+
+// 2.3. Entero fuera de rango ( > 2^31 )
+var fueraDeRango = 2147483649;
+
+// 2.4. Entero límite exacto (que NO debería dar error si se permiten ±2^31).
+//      OJO: Tal como está tu "if(atol(yytext) > 2147483648)", 2147483648 ya se considera fuera.
+var limiteTeoricoNegativo = -2147483648;
+var limiteTeoricoPositivo = 2147483648;  // Probablemente error según tu código
+
+// 2.5. String con comillas sin escapar: Falta \ antes de las comillas
+var stringInvalido = "Texto con "comillas" internas";
+
+// 2.6. String sin cerrar
+var stringSinCerrar = "Esto no tiene comilla de cierre
+
+// 2.7. Carácter inválido en miniC (por ejemplo, la arroba '@' o el símbolo '&')
+var simboloInvalido = 100@;
+var otroSimbolo = 42 & 3;
+
+// 2.8. Comentario de bloque sin cerrar
+/* Esto es un comentario de bloque
+   que nunca se cierra
+
+// ==================================
+// TEST 3: Casos puntuales
+// ==================================
+  
+// 3.1. Repetimos algunos tokens sueltos para ver si los reconoce bien
+( ) { } ? : , ; = + - * /
+
+// 3.2. Palabras reservadas en distintas líneas
+var
+const
+int
+if
+else
+while
+print
+read
+
+// 3.3. Bloque vacío (correcto pero trivial)
+main(){}

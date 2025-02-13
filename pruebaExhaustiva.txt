@@ -54,12 +54,12 @@ var supercalifragilisticoespiralidosoVariableEterna123 = 1;
 // 2.3. Entero fuera de rango ( > 2^31 )
 var fueraDeRango = 2147483649;
 
-// 2.4. Entero límite exacto (que NO debería dar error si se permiten ±2^31).
-//      OJO: Tal como está tu "if(atol(yytext) > 2147483648)", 2147483648 ya se considera fuera.
+// 2.4. Entero límite exacto (que NO debería dar error)
+//      
 var limiteTeoricoNegativo = -2147483648;
-var limiteTeoricoPositivo = 2147483648;  // Probablemente error según tu código
+var limiteTeoricoPositivo = 2147483648;  
 
-// 2.5. String con comillas sin escapar: Falta \ antes de las comillas
+// 2.5. String con comillas sin escapar: Falta \ antes de las comillas (No va a dar error puesto que se va a tomar como cadena identificador cadena)
 var stringInvalido = "Texto con "comillas" internas";
 
 // 2.6. String sin cerrar
@@ -70,25 +70,10 @@ var simboloInvalido = 100@;
 var otroSimbolo = 42 & 3;
 
 // 2.8. Comentario de bloque sin cerrar
+
+// 2.9. Bloque vacío (correcto pero trivial)
+main(){}   
+
 /* Esto es un comentario de bloque
    que nunca se cierra
 
-// ==================================
-// TEST 3: Casos puntuales
-// ==================================
-  
-// 3.1. Repetimos algunos tokens sueltos para ver si los reconoce bien
-( ) { } ? : , ; = + - * /
-
-// 3.2. Palabras reservadas en distintas líneas
-var
-const
-int
-if
-else
-while
-print
-read
-
-// 3.3. Bloque vacío (correcto pero trivial)
-main(){}

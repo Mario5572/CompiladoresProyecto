@@ -7,5 +7,8 @@ lex.yy.c: lexico.l
 test: lexico entrada.txt
 	./lexico entrada.txt
 
+supertest: lexico pruebaExhaustiva.txt
+	./lexico pruebaExhaustiva.txt
+
 clean: 
 	rm lex.yy.c lexico

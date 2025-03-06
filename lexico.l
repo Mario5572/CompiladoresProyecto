@@ -1,6 +1,6 @@
 /* Sección de definiciones */
 %{
-    #include "calculadora.tab.h"
+    #include "sintaxis.tab.h"
     #include <stdio.h>    
     #include <stdlib.h>
 %}
@@ -33,7 +33,7 @@ errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-\?:]+
 
  /* Tokens */
 
-\"([^"\n\\]|\\.)*\"      {return CADE;}
+\"([^"\n\\]|\\.)*\"      {return STRING;}
 "{"         {return LLAI;}
 "}"         {return LLAD;}
 "="         {return ASIG;}

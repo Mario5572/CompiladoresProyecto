@@ -41,6 +41,7 @@
 %token ELSE "else"
 %token WHILE "while"
 %token READ "read"
+%token <cadena> STRING "string"
 
 %type <entero> expresion
 
@@ -56,34 +57,48 @@
 
 %%
   
-program   : { inicializar(); } ID "(" ")" "{" declarations statement_list "}"
+program   : { inicializar(); } ID "(" ")" "{" declarations statement_list "}"  
           ;
 
 declarations  : declarations VAR tipo var_list ";" 
               | declarations CONST tipo const_list ";" 
+              |
               ;
 
 tipo          : INT
 
 var_list      : ID
               | var_list ID
+              ;
 
-const_list    : ID "=" expresion ";" 
+const_list    : ID "=" expresion 
+              ;
 
 statement_list: statement_list statement
-              | 
+              |
+              ;
 
 statement     : ID "=" expresion ";"
-              | "{" statement_list "}" ";"
-              | IF "(" expresion ")" statement ";" ELSE statement ";"
-              | IF "(" expresion ")" statement ";"
-              | WHILE "(" expresion ")" statement ";"
+              | "{" statement_list "}" 
+              | IF "(" expresion ")" statement ELSE statement 
+              | IF "(" expresion ")" statement 
+              | WHILE "(" expresion ")" statement 
               | PRINT "(" print_list ")" ";"
               | READ "(" read_list ")" ";"
+              ;
 
-print_list:   |
+print_list    : print_item
+              | print_list "," print_item
+              ;
 
-read_list:    |
+print_item    : expresion
+              | STRING
+              ;
+
+read_list     : ID
+              | read_list "," ID
+              ;
+
 
 asignacion: REG "=" expresion ";"  { printf("%s=%d\n", $1, $3); 
                                      int idx = $1[1] -'0';

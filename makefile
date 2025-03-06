@@ -1,14 +1,14 @@
-lexico: main.c lex.yy.c lexico.h
-	gcc main.c lex.yy.c -lfl -o lexico
+ejecutable: main.c lex.yy.c sintaxis.tab.c
+	gcc main.c lex.yy.c sintaxis.tab.c -lfl -o ProyectoCompiladores
 
-lex.yy.c: lexico.l
+lex.yy.c : lexico.l sintaxis.tab.h
 	flex lexico.l
 
-test: lexico entrada.txt
-	./lexico entrada.txt
+sintaxis.tab.h sintaxis.tab.c : sintaxis.y
+	bison -d -v sintaxis.y
 
-supertest: lexico pruebaExhaustiva.txt
-	./lexico pruebaExhaustiva.txt
+clean :
+	rm -f ProyectoCompiladores sintaxis.tab.* lex.yy.c sintaxis.output
 
-clean: 
-	rm lex.yy.c lexico
+run : ProyectoCompiladores entrada.txt
+	./ejecutable entrada.txt

@@ -1,6 +1,6 @@
 /* Sección de definiciones */
 %{
-    #include "lexico.h"
+    #include "calculadora.tab.h"
     #include <stdio.h>    
     #include <stdlib.h>
 %}
@@ -48,25 +48,30 @@ errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-\?:]+
 "*"         {return MULT;}
 "?"         {return QUES;}
 ":"         {return DOSP;}
-"print"     {return PRIN;}
+"print"     {return PRINT;}
 "main"      {return MAIN;}
-"var"       {return VARI;}
-"const"     {return CONS;}
-"int"       {return INTE;}
+"var"       {return VAR;}
+"const"     {return CONST;}
+"int"       {return INT;}
 "if"        {return IF;}
 "else"      {return ELSE;}
-"while"     {return WHIL;}
+"while"     {return WHILE;}
 "read"      {return READ;}
-({letra}|_|$)({letra}|{digito}|_|$)* {
+({letra}|_)({letra}|{digito}|_)* {
     if(strlen(yytext) > 32){
         printf("Identificador demasiado largo en la linea %d\n",yylineno);
     }
+    yylval.cadena = strdup(yytext);
+    return ID
 }
 {digito}+   {
     if(atol(yytext) > 2147483648){
         printf("Entero demasiado largo en linea %d\n",yylineno);
     }
+    yylval.entero = atoi(yytext);
+    return NUM
 }
+r[0-9]      { yylval.cadena = strdup(yytext); return REG; }
 \"([^"\n\\]|\\.)*   {printf("Cadena sin cerrar en linea %d\n",yylineno);}
 {errores}          {printf("Error en linea %d: %s\n",yylineno, yytext);}
 

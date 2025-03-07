@@ -33,7 +33,7 @@ errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-\?:]+
 
  /* Tokens */
 
-\"([^"\n\\]|\\.)*\"      {return STRING;}
+
 "{"         {return LLAI;}
 "}"         {return LLAD;}
 "="         {return ASIG;}
@@ -42,10 +42,9 @@ errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-\?:]+
 "*"         {return MULT;}
 "/"         {return DIVI;}
 "("         {return PARI;}
-")"         {return PARD;}
+")"         {return PARD;}  
 ","         {return COMA;}
 ";"         {return PYCO;}
-"*"         {return MULT;}
 "?"         {return QUES;}
 ":"         {return DOSP;}
 "print"     {return PRINT;}
@@ -62,17 +61,18 @@ errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-\?:]+
         printf("Identificador demasiado largo en la linea %d\n",yylineno);
     }
     yylval.cadena = strdup(yytext);
-    return ID
+    return ID;
 }
 {digito}+   {
     if(atol(yytext) > 2147483648){
         printf("Entero demasiado largo en linea %d\n",yylineno);
     }
     yylval.entero = atoi(yytext);
-    return NUM
+    return NUM;
 }
 r[0-9]      { yylval.cadena = strdup(yytext); return REG; }
 \"([^"\n\\]|\\.)*   {printf("Cadena sin cerrar en linea %d\n",yylineno);}
+\"([^"\n\\]|\\.)*\"      {return STRING;}
 {errores}          {printf("Error en linea %d: %s\n",yylineno, yytext);}
 
 

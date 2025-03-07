@@ -1,2 +1,4 @@
-/lexico
+/ProyectoCompiladores
 /lex.yy.c
+/sintaxis.output
+/sintaxis.tab.[hc]

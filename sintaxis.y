@@ -55,6 +55,8 @@
 %left "+" "-" 
 %left "*" "/"
 
+%expect 1
+
 %%
   
 program   : { inicializar(); } ID "(" ")" "{" declarations statement_list "}"  
@@ -67,15 +69,15 @@ declarations  : declarations VAR tipo var_list ";" {printf("d -> d var t var_lis
 
 tipo          : INT {printf("t -> INT\n");}
 
-var_list      : ID  {printf("var_list -> ID");}
-              | var_list ID {printf("var_list -> var_list ID");}
+var_list      : ID  {printf("var_list -> ID\n");}
+              | var_list ID {printf("var_list -> var_list ID\n");}
               ;
 
-const_list    : ID "=" expresion {printf("const_list -> ID = e");}
-              | const_list "," ID "=" expresion {printf("const_list -> const_list , ID = e ");}
+const_list    : ID "=" expresion {printf("const_list -> ID = e\n");}
+              | const_list "," ID "=" expresion {printf("const_list -> const_list , ID = e\n");}
               ;
 
-statement_list: statement_list statement {printf("statement_list -> statement_list statement");}
+statement_list: statement_list statement {printf("statement_list -> statement_list statement\n");}
               |
               ;
 
@@ -95,16 +97,16 @@ statement     : ID "=" expresion ";"
                   { printf("statement -> READ ( read_list ) ;\n"); }
               ;
 
-print_list    : print_item {printf("print_list -> print_item");}
-              | print_list "," print_item {printf("print_list -> print_list , print_item ");}
+print_list    : print_item {printf("print_list -> print_item\n");}
+              | print_list "," print_item {printf("print_list -> print_list , print_item\n");}
               ;
 
-print_item    : expresion  {printf("print_item -> e");}
-              | STRING     {printf("print_item -> STRING");}
+print_item    : expresion  {printf("print_item -> e\n");}
+              | STRING     {printf("print_item -> STRING\n");}
               ;
 
 read_list     : ID          {printf("read_list -> id");}
-              | read_list "," ID  {printf("read_list -> read_list , ID");}
+              | read_list "," ID  {printf("read_list -> read_list , ID\n");}
               ;
 
 
@@ -119,7 +121,7 @@ expresion : expresion "+" expresion   { printf("e->e+e\n"); $$ = $1+$3; }
                                       $$ = $1/$3;
                                     }
           | NUM                     { printf("e->NUM %d\n", $1); $$ = $1;}
-          | REG                     { printf("e->REG %s\n", $1); 
+          | ID                     { printf("e->ID %s\n", $1); 
                                       // REG == r\d
                                       int idx = $1[1] -'0';
                                       $$ = regs[idx];

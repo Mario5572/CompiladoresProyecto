@@ -1,4 +1,4 @@
-ejecutable: main.c lex.yy.c sintaxis.tab.c
+ProyectoCompiladores: main.c lex.yy.c sintaxis.tab.c
 	gcc main.c lex.yy.c sintaxis.tab.c -lfl -o ProyectoCompiladores
 
 lex.yy.c : lexico.l sintaxis.tab.h
@@ -11,4 +11,4 @@ clean :
 	rm -f ProyectoCompiladores sintaxis.tab.* lex.yy.c sintaxis.output
 
 run : ProyectoCompiladores entrada.txt
-	./ejecutable entrada.txt
+	./ProyectoCompiladores entrada.txt

@@ -1,5 +1,5 @@
 ProyectoCompiladores: main.c lex.yy.c sintaxis.tab.c
-	gcc main.c lex.yy.c sintaxis.tab.c -lfl -o ProyectoCompiladores
+	gcc main.c lex.yy.c sintaxis.tab.c listaSimbolos.c -lfl -o ProyectoCompiladores
 
 lex.yy.c : lexico.l sintaxis.tab.h
 	flex lexico.l

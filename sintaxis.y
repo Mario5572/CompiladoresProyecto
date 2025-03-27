@@ -8,23 +8,35 @@
     void inicializar();
     #include "listaSimbolos.h"
     #include <stdbool.h>
+    #include "listaCodigo.h"
     Lista tablaSimb;
     int contCadenas=0;
     bool insertaSimboloEnLista(Lista tablaSimb,char *nombre, Tipo tipo, int valor);
     void comprobaciones_finales();
+    bool validarAsignacionDeIdentificador(Lista l, char *nombre);
+    bool validarExistenciaDeIdentificador(Lista lista, char *nombre);
+    void anade_operacion_lista_codigo(ListaC lc,char* op,char* reg,char* arg1,char* arg2);
+    char* obtenerReg();
+    void liberarReg(char* i_str);
+    const int n_registros = 9;
+    bool registros_en_uso[9];
 %}
+%code requires {
+  #include "listaCodigo.h"
+}
 
 // Definición de tipos de datos de símbolos de la gramática
 %union {
-    int entero;
     char *cadena;
+    ListaC codigo;
+    int entero;
 }
 
 %token SUMA "+"
 %token REST "-"
 %token MULT "*"
 %token DIVI "/"
-%token <entero> NUM "number"
+%token <cadena> NUM "number"
 %token PARI "("
 %token PARD ")"
 %token PYCO ";"
@@ -48,7 +60,7 @@
 %token READ "read"
 %token <cadena> STRING "string"
 
-%type <entero> expresion
+%type <codigo> expresion
 
 %define parse.error verbose
 
@@ -92,7 +104,8 @@ statement_list: statement_list statement {printf("statement_list -> statement_li
               ;
 
 statement     : ID "=" expresion ";" 
-                  { printf("statement -> ID = e ;\n"); }
+                  { printf("statement -> ID = e ;\n"); 
+                    validarAsignacionDeIdentificador(tablaSimb,$1);}
               | "{" statement_list "}" 
                   { printf("statement -> { statement_list }\n"); }
               | IF "(" expresion ")" statement ELSE statement 
@@ -115,28 +128,38 @@ print_item    : expresion  {printf("print_item -> e\n");}
               | STRING     {printf("print_item -> STRING\n");}
               ;
 
-read_list     : ID          {printf("read_list -> id");}
-              | read_list "," ID  {printf("read_list -> read_list , ID\n");}
+read_list     : ID          {printf("read_list -> id");
+                             validarExistenciaDeIdentificador(tablaSimb,$1);}
+              | read_list "," ID  {printf("read_list -> read_list , ID\n");
+                                   validarExistenciaDeIdentificador(tablaSimb,$3);}
               ;
 
 
-expresion : expresion "+" expresion   { printf("e->e+e\n"); $$ = $1+$3; }
-          | expresion "-" expresion   { printf("e->e-e\n"); $$ = $1-$3; }
-          | expresion "*" expresion   { printf("e->e*e\n"); $$ = $1*$3;}
+expresion : expresion "+" expresion   { printf("e->e+e\n"); }
+          | expresion "-" expresion   { printf("e->e-e\n"); }
+          | expresion "*" expresion   { printf("e->e*e\n");}
           | expresion "/" expresion   { printf("e->e/e\n"); 
                                       if ($3 == 0) {
                                         printf("División por cero\n");
                                         exit(1);
                                       }
-                                      $$ = $1/$3;
                                     }
-          | NUM                     { printf("e->NUM %d\n", $1); $$ = $1;}
+          | NUM                     { printf("e->NUM %s\n", $1);
+                                     $$ = creaLC();
+                                     char* reg = obtenerReg();
+                                     anade_operacion_lista_codigo($$,"li",reg,$1,NULL);
+                                     guardaResLC($$,reg);}
           | ID                     { printf("e->ID %s\n", $1); 
-                                      // REG == r\d
-                                      int idx = $1[1] -'0';
+                                      validarExistenciaDeIdentificador(tablaSimb,$1);
+                                      $$ = creaLC();
+                                      char* reg = obtenerReg();
+                                      char *iden;
+                                      asprintf(&iden,"_%s",$1);
+                                      anade_operacion_lista_codigo($$,"lw",reg,iden,NULL);
+                                      guardaResLC($$,reg);
                                     }
-          | "(" expresion ")"       { printf("e->(e)\n");  $$ = $2; }
-          | "-" expresion           { printf("e->-e\n"); $$ = -$2; }
+          | "(" expresion ")"       { printf("e->(e)\n");  }
+          | "-" expresion           { printf("e->-e\n");  }
           ;
 
 %%
@@ -148,12 +171,61 @@ void yyerror(const char *msg) {
 void inicializar() {
     printf("Creo la tabla\n");
     tablaSimb = creaLS();
+    for(int i=0;i<n_registros;i++){
+        registros_en_uso[i] = false;
+    }
+}
+
+void anade_operacion_lista_codigo(ListaC lc,char* op,char* reg,char* arg1,char* arg2){
+    Operacion oper;
+    oper.op = op;
+    oper.res = reg;
+    oper.arg1 = arg1;
+    oper.arg2 = arg2;
+    insertaLC(lc, finalLC(lc),oper);
+}
+char* obtenerReg(){
+    for(int i=0;i<n_registros;i++){
+        if(!registros_en_uso[i]) {
+            char* buff;
+            asprintf(&buff,"$t%d",i);
+            return buff;
+        }
+    }
+    yyerror("No hay suficientes registros para llevar a cabo la operacion");
+}
+void liberarReg(char* i_str){
+    int i = i_str[2] - '0';
+    if(!registros_en_uso[i]){
+        printf("Se ha intentado liberar un registro no usado");
+        return;
+    }
+    registros_en_uso[i] = false;
 }
 
 bool isNombreDeSimboloEnLista(Lista lista, char * nombre){
     return !(buscaLS(lista,nombre) == finalLS(lista));
 }
-
+bool validarAsignacionDeIdentificador(Lista lista, char *nombre){
+    PosicionLista p = buscaLS(lista,nombre);
+    if(p == finalLS(lista)){
+        printf("ERROR: La variable %s ha sido asignada sin ser declarada\n",nombre);
+        return false;
+    }
+    if(recuperaLS(lista,p).tipo == CONSTANTE){
+        printf("ERROR: La variable %s es constante y ha sido reasignada\n",nombre);
+        return false;
+    }
+    return true;
+}
+bool validarExistenciaDeIdentificador(Lista lista, char *nombre){
+    PosicionLista p = buscaLS(lista,nombre);
+    if(p == finalLS(lista)){
+        printf("ERROR: La variable %s ha intentado ser leida sin ser declarada\n",nombre);
+        return false;
+    }
+    return true;
+}
 
 bool insertaSimboloEnLista(Lista tablaSimb,char *nombre, Tipo tipo, int valor){
     if(isNombreDeSimboloEnLista(tablaSimb,nombre)){

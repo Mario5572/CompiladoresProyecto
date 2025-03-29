@@ -1,0 +1,4 @@
+__main__(){
+    const int hola = 5;
+    hola = 3;
+}

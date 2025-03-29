@@ -56,7 +56,7 @@ errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-\?:]+
 "else"      {return ELSE;}
 "while"     {return WHILE;}
 "read"      {return READ;}
-\"([^"\n\\]|\\.)*\"      {return STRING;}
+\"([^"\n\\]|\\.)*\"      {yylval.cadena = yytext; return STRING;}
 ({letra}|_)({letra}|{digito}|_)* {
     if(strlen(yytext) > 32){
         printf("Identificador demasiado largo en la linea %d\n",yylineno);
@@ -68,7 +68,7 @@ errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-\?:]+
     if(atol(yytext) > 2147483648){
         printf("Entero demasiado largo en linea %d\n",yylineno);
     }
-    yylval.entero = atoi(yytext);
+    yylval.cadena = strdup(yytext);
     return NUM;
 }
 \"([^"\n\\]|\\.)*   {printf("Cadena sin cerrar en linea %d\n",yylineno);}

@@ -20,6 +20,9 @@
     ListaC expresion_unop(ListaC l1,char *op);
     ListaC statement_asig(char* iden, ListaC l1, char* op);
     ListaC cargaStringEnRegistro(int string_identifier, char* reg);
+    char * cargaDireccionDeIdentificadorAUnRegistro(ListaC l1,char * ident);
+    void imprimirRegistro(ListaC l1, char* reg);
+    void imprimirFromMemoria(ListaC l1, char* ident);
     char* obtenerReg();
     void liberarReg(char* i_str);
     const int n_registros = 9;
@@ -81,12 +84,12 @@
 
 %%
   
-program   : { inicializar(); } ID "(" ")" "{" declarations statement_list "}"  {concatenaLC($6,$7); comprobaciones_finales($6);}
+program   : { inicializar(); } ID "(" ")" "{" declarations statement_list "}"  {if (errores == 0) concatenaLC($6,$7); comprobaciones_finales($6);}
           ;
 
 declarations  : declarations VAR tipo var_list ";" {printf("d -> d var t var_list\n"); $$ = $1;}
             | declarations CONST tipo const_list ";" {printf("d -> d const t const_list\n");
-                                                      concatenaLC($1,$4); $$ = $1;}
+                                                      if (errores == 0) concatenaLC($1,$4); $$ = $1;}
             | {$$ = creaLC();}
             ;
 
@@ -104,12 +107,12 @@ const_list    : ID "=" expresion {printf("const_list -> ID(%s) = e\n",$1);
                                   $$ = statement_asig($1,$3,"sw");}
               | const_list "," ID "=" expresion {printf("const_list -> const_list , ID(%s) = e\n",$3);
                                                  insertaSimboloEnLista(tablaSimb,$3,CONSTANTE,0);
-                                                 concatenaLC($1,statement_asig($3,$5,"sw"));
+                                                 if (errores == 0) concatenaLC($1,statement_asig($3,$5,"sw"));
                                                  $$ = $1;}
               ;
 
 statement_list: statement_list statement {printf("statement_list -> statement_list statement\n");
-                                          concatenaLC($1,$2);
+                                          if (errores == 0) concatenaLC($1,$2);
                                           $$ = $1;}
               | statement {printf("statement_list -> statement\n");
                            $$ = $1;}
@@ -135,14 +138,20 @@ statement     : ID "=" expresion ";"
               ;
 
 print_list    : print_item {printf("print_list -> print_item\n"); $$ = $1;}
-              | print_list "," print_item {printf("print_list -> print_list , print_item\n"); concatenaLC($1,$3); $$ = $1;}
+              | print_list "," print_item {printf("print_list -> print_list , print_item\n"); if (errores == 0) concatenaLC($1,$3); $$ = $1;}
               ;
 
-print_item    : expresion  {printf("print_item -> e\n"); $$ = $1;}
+print_item    : expresion  {printf("print_item -> e\n"); imprimirRegistro($1,recuperaResLC($1));
+                                                                          liberarReg(recuperaResLC($1));
+                                                                          $$ = $1;}
               | STRING     {printf("print_item -> %s\n",$1);
                             Simbolo s = insertaSimboloEnLista(tablaSimb,$1,CADENA,strIdentifier++);
-                            $$ = cargaStringEnRegistro(s.valor,obtenerReg());
+                            $$ = creaLC();
+                            char* ident;
+                            asprintf(&ident,"$str%d",s.valor);
+                            imprimirFromMemoria($$,ident);
                             }
+
               ;
 
 read_list     : ID          {printf("read_list -> id");
@@ -220,6 +229,7 @@ ListaC expresion_binop(ListaC l1,ListaC l2,char *op){
     oper.arg2 = recuperaResLC(l2);
     concatenaLC(l1,l2);
     insertaLC(l1,finalLC(l1),oper);
+    liberarReg(oper.arg2); // Puedo liberar el registro de la expresion 2
     return l1;
 }
 ListaC expresion_unop(ListaC l1,char *op){
@@ -232,27 +242,29 @@ ListaC expresion_unop(ListaC l1,char *op){
     insertaLC(l1,finalLC(l1),oper);
     return l1;
 }
-ListaC statement_asig(char* iden, ListaC l1, char* op){ //ESTO ESTA MAL MIRAR https://stackoverflow.com/questions/10324691/storing-addresses-in-a-register-for-mips
+ListaC statement_asig(char* iden, ListaC l1, char* op){
     if(errores > 0) return NULL;
-    //CARGO EN UN REGISTRO LA DIR DE MEMORIA DE MI VARIABLE
-    Operacion op1;
-    op1.op = "la";
-    op1.arg1 = obtenerReg();
-    asprintf(&op1.arg2,"_%s",iden);
-    op1.res = 0;
-    insertaLC(l1,finalLC(l1),op1);
-    //Una vez que tengo la direccion de mi variable en el registro op1.arg1 hago sw
     Operacion oper;
     oper.op = "sw";
     asprintf(&oper.arg1,"%s",recuperaResLC(l1)); //En el primer parametro del sw va el registro donde se encuentran los datos a cargar
-    asprintf(&oper.arg2,"0(%s)",op1.arg1); //En el segundo paraemtro del sw ira algo de la forma 0($t0) donde $t0 es el registro en el que hemos
+    asprintf(&oper.arg2,"_%s",iden); //En el segundo paraemtro del sw ira el _identificador 
     // usado para cargar la dir de nuestra variable
     oper.res = 0;
     insertaLC(l1,finalLC(l1),oper);
-    printf("lirililalila %s\n",op1.arg1);
-    liberarReg(op1.arg1); //Tras esto podemos liberar el registro que hemos usado para almacenar la dir de la variable
     liberarReg(recuperaResLC(l1)); // Creo que tambien puedo liberar este registro que el que almacena el valor de la expresion
     return l1;
+}
+char * cargaDireccionDeIdentificadorAUnRegistro(ListaC l1,char * ident){
+    /*Busca un registro para cargar la direccion de memoria de un identificador, lo concatena a la lista de codigo y devuelve el registro */
+    // Esta funcion es innecesaria puesto que existe la pseudo instruccion sw $t0, _hola que ya carga automaticamente la direccion de memoria de _hola
+    Operacion cargarMem;
+    cargarMem.op = "la";
+    char* registro = obtenerReg();
+    cargarMem.arg1 = registro;
+    asprintf(&cargarMem.arg2,"_%s",ident);
+    cargarMem.res = 0;
+    insertaLC(l1,finalLC(l1),cargarMem);
+    return registro;
 }
 ListaC cargaStringEnRegistro(int string_identifier, char* reg){
     ListaC l1 = creaLC();
@@ -261,6 +273,50 @@ ListaC cargaStringEnRegistro(int string_identifier, char* reg){
     asprintf(&oper.arg1,"$str%d",string_identifier);
     guardaResLC(l1,reg);
     return l1;
+}
+void imprimirFromMemoria(ListaC l1, char* ident){
+
+    //Movemos el valor de memoria a $a0
+    Operacion op1;
+    op1.op = "lw";
+    op1.res = "$a0";
+    asprintf(&op1.arg1,"%s",ident);
+    op1.arg2 = 0;
+    insertaLC(l1,finalLC(l1),op1);
+    //Movemos el valor 4 al registro $v0
+    Operacion op2;
+    op2.op = "li";
+    op2.res = "$v0";
+    op2.arg1 = "4";
+    op2.arg2 = 0;
+    insertaLC(l1,finalLC(l1),op2);
+    //Finalmente hacemos un syscall
+    Operacion op3;
+    op3.op = "syscall";
+    op3.arg1 = op3.arg2 = op3.res = 0;
+    insertaLC(l1,finalLC(l1),op3);
+}
+void imprimirRegistro(ListaC l1, char* reg){
+
+    //Movemos el valor del registro a $a0
+    Operacion op1;
+    op1.op = "move";
+    op1.res = "$a0";
+    asprintf(&op1.arg1,"%s",reg);
+    op1.arg2 = 0;
+    insertaLC(l1,finalLC(l1),op1);
+    //Movemos el valor 4 al registro $v0
+    Operacion op2;
+    op2.op = "li";
+    op2.res = "$v0";
+    op2.arg1 = "1";
+    op2.arg2 = 0;
+    insertaLC(l1,finalLC(l1),op2);
+    //Finalmente hacemos un syscall
+    Operacion op3;
+    op3.op = "syscall";
+    op3.arg1 = op3.arg2 = op3.res = 0;
+    insertaLC(l1,finalLC(l1),op3);
 }
 char* obtenerReg(){
     for(int i=0;i<n_registros;i++){
@@ -290,10 +346,12 @@ bool validarAsignacionDeIdentificador(Lista lista, char *nombre){
     PosicionLista p = buscaLS(lista,nombre);
     if(p == finalLS(lista)){
         printf("ERROR: La variable %s ha sido asignada sin ser declarada\n",nombre);
+        errores++;
         return false;
     }
     if(recuperaLS(lista,p).tipo == CONSTANTE){
         printf("ERROR: La variable %s es constante y ha sido reasignada\n",nombre);
+        errores++;
         return false;
     }
     return true;
@@ -378,6 +436,7 @@ void imprimirTablaSimbolos(){
 void imprimirLC(ListaC codigo){
     PosicionListaC p = inicioLC(codigo);
     Operacion oper;
+    printf(".text\n");
     while (p != finalLC(codigo)) {
     oper = recuperaLC(codigo,p);
     if(!strcmp(oper.op,"etiq")){
@@ -394,9 +453,13 @@ void imprimirLC(ListaC codigo){
 }
 void comprobaciones_finales(ListaC l){
     mostrarListaSimbolos(tablaSimb);
-    printf("\n\n ----------- CODIGO MIPS --------------\n\n");
-    imprimirTablaSimbolos();
-    imprimirLC(l);
+    printf("\n\n -------------HA HABIDO %d ERRORES-----------------\n\n", errores);
+    if (errores == 0){
+        printf("\n\n ----------- SEGMENTO DE DATOS --------------\n\n");
+        imprimirTablaSimbolos();
+        printf("\n\n ----------- INSTRUCCIONES MIPS --------------\n\n");
+        imprimirLC(l);
+    }
     liberaListaSimbolos(tablaSimb);
     
 }

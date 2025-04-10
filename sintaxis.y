@@ -13,7 +13,7 @@
     int contCadenas=0;
     Simbolo insertaSimboloEnLista(Lista tablaSimb,char *nombre, Tipo tipo, int valor);
     void comprobaciones_finales();
-    bool validarAsignacionDeIdentificador(Lista l, char *nombre);
+    bool validarNoConstanteIdentificador(Lista l, char *nombre);
     bool validarExistenciaDeIdentificador(Lista lista, char *nombre);
     void anade_operacion_lista_codigo(ListaC lc,char* op,char* reg,char* arg1,char* arg2);
     ListaC expresion_binop(ListaC l1,ListaC l2,char *op);
@@ -23,9 +23,13 @@
     char * cargaDireccionDeIdentificadorAUnRegistro(ListaC l1,char * ident);
     void imprimirRegistro(ListaC l1, char* reg);
     void imprimirFromMemoria(ListaC l1, char* ident);
+    void leerIdentificador(ListaC l1,char* iden);
+    void statementIf(ListaC l,ListaC expresion,ListaC statement);
     char* obtenerReg();
+    char* obtenerEtiq();
     void liberarReg(char* i_str);
     const int n_registros = 9;
+    int contador_etiq = 1;
     bool registros_en_uso[9];
     int errores = 0;
     int strIdentifier = 0;
@@ -68,7 +72,7 @@
 %token READ "read"
 %token <cadena> STRING "string"
 
-%type <codigo> expresion statement statement_list declarations const_list print_item print_list
+%type <codigo> expresion statement statement_list declarations const_list print_item print_list read_list
 
 %define parse.error verbose
 
@@ -114,27 +118,31 @@ const_list    : ID "=" expresion {printf("const_list -> ID(%s) = e\n",$1);
 statement_list: statement_list statement {printf("statement_list -> statement_list statement\n");
                                           if (errores == 0) concatenaLC($1,$2);
                                           $$ = $1;}
-              | statement {printf("statement_list -> statement\n");
-                           $$ = $1;}
+              | {$$ = creaLC();}
               ;
 
 statement     : ID "=" expresion ";" 
                   { printf("statement -> ID = e ;\n"); 
-                    validarAsignacionDeIdentificador(tablaSimb,$1);
+                    validarNoConstanteIdentificador(tablaSimb,$1);
                      $$ = statement_asig($1,$3,"sw");
                     }
-              | "{" statement_list "}" 
-                  { printf("statement -> { statement_list }\n"); }
+              | "{" statement_list "}" { printf("statement -> { statement_list }\n"); 
+                                         $$ = $2; }
               | IF "(" expresion ")" statement ELSE statement 
-                  { printf("statement -> IF ( e ) statement ELSE statement\n"); }
+                  { printf("statement -> IF ( e ) statement ELSE statement\n"); 
+                    $$ = creaLC();
+                    //statementIfElse($$,$3,$5,$7);
+                  }
               | IF "(" expresion ")" statement 
-                  { printf("statement -> IF ( e ) statement\n"); }
+                  { printf("statement -> IF ( e ) statement\n");
+                    $$ = creaLC();
+                    statementIf($$,$3,$5); }
               | WHILE "(" expresion ")" statement 
                   { printf("statement -> WHILE ( e ) statement\n"); }
               | PRINT "(" print_list ")" ";" 
                   { printf("statement -> PRINT ( print_list ) ;\n"); $$ = $3; } // TODO AQUI VA LA LOGICA DE IMPRIMIR Y LIBERACION DE REGISTROSSS
               | READ "(" read_list ")" ";" 
-                  { printf("statement -> READ ( read_list ) ;\n"); }
+                  { printf("statement -> READ ( read_list ) ;\n"); $$ = $3; }
               ;
 
 print_list    : print_item {printf("print_list -> print_item\n"); $$ = $1;}
@@ -155,9 +163,15 @@ print_item    : expresion  {printf("print_item -> e\n"); imprimirRegistro($1,rec
               ;
 
 read_list     : ID          {printf("read_list -> id");
-                             validarExistenciaDeIdentificador(tablaSimb,$1);}
+                             validarNoConstanteIdentificador(tablaSimb,$1);
+                             $$ = creaLC();
+                             leerIdentificador($$,$1);
+                             }
               | read_list "," ID  {printf("read_list -> read_list , ID\n");
-                                   validarExistenciaDeIdentificador(tablaSimb,$3);}
+                                   validarNoConstanteIdentificador(tablaSimb,$3);
+                                   $$ = $1;
+                                   leerIdentificador($$,$3);
+                                   }
               ;
 
 
@@ -318,6 +332,40 @@ void imprimirRegistro(ListaC l1, char* reg){
     op3.arg1 = op3.arg2 = op3.res = 0;
     insertaLC(l1,finalLC(l1),op3);
 }
+void leerIdentificador(ListaC l1,char* iden){
+    Operacion op1;
+    op1.op = "li";
+    op1.res = "$v0";
+    op1.arg1 = "5";
+    op1.arg2 = 0;
+    insertaLC(l1,finalLC(l1),op1);
+    Operacion op2;
+    op2.op = "syscall";
+    op2.res = op2.arg1 = op2.arg2 = 0;
+    insertaLC(l1,finalLC(l1),op2);
+    Operacion op3;
+    op3.op = "sw";
+    op3.res = "$v0";
+    asprintf(&op3.arg1,"_%s",iden);
+    op3.arg2 = 0;
+    insertaLC(l1,finalLC(l1),op3);
+}
+void statementIf(ListaC l, ListaC expresion, ListaC statement){
+    char *etiq = obtenerEtiq();
+    Operacion op1;
+    op1.op = "beqz";
+    op1.res = recuperaResLC(expresion);
+    op1.arg1 = etiq;
+    op1.arg2 = 0;
+    insertaLC(expresion,finalLC(expresion),op1);
+    concatenaLC(l,expresion);
+    concatenaLC(l,statement);
+    Operacion op2;
+    op2.op = "etiq";
+    op2.res = etiq;
+    op2.arg1 = op2.arg2 = 0;
+    insertaLC(l,finalLC(l),op2);
+}
 char* obtenerReg(){
     for(int i=0;i<n_registros;i++){
         if(!registros_en_uso[i]) {
@@ -328,6 +376,11 @@ char* obtenerReg(){
         }
     }
     yyerror("No hay suficientes registros para llevar a cabo la operacion");
+}
+char* obtenerEtiq(){
+    char* etiq;
+    asprintf(&etiq,"$l%d",contador_etiq++);
+    return etiq;
 }
 void liberarReg(char* i_str){
     printf("Voy a liberar el reg ");
@@ -342,7 +395,7 @@ void liberarReg(char* i_str){
 bool isNombreDeSimboloEnLista(Lista lista, char * nombre){
     return !(buscaLS(lista,nombre) == finalLS(lista));
 }
-bool validarAsignacionDeIdentificador(Lista lista, char *nombre){
+bool validarNoConstanteIdentificador(Lista lista, char *nombre){
     PosicionLista p = buscaLS(lista,nombre);
     if(p == finalLS(lista)){
         printf("ERROR: La variable %s ha sido asignada sin ser declarada\n",nombre);

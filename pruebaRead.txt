@@ -1,0 +1,9 @@
+__main__(){
+    var int a;
+    var int b;
+    b = 2;
+
+    if(b){
+        print("hola");
+    }
+}

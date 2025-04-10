@@ -1,4 +1,4 @@
 __main__(){
-    const int hola = 5;
-    hola = 3;
+    const int armas = 6;
+    print(3,armas-6,"He resuelto el standoff");
 }

@@ -1,9 +1,9 @@
 prueba() {
     var int c;
-    c=4;
-    print(c!=3,"\n");
-    read(c);
-    if(c > 3){
-        print("c es mayor que 3");
+    c=2;
+
+    for(print("esto esta cursed\n") ; c<10 ; c = c*2-1; ){
+        print("hola\n");
     }
+
  }

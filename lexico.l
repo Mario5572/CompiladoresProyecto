@@ -63,6 +63,10 @@ errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-\?:]+
 ">="        { return GE; }
 "<"         { return LT; }
 ">"         { return GT; }
+"for"    { return FOR; }
+"from"   { return FROM; }
+"to"     { return TO; }
+
 \"([^"\n\\]|\\.)*\"      {yylval.cadena = yytext; return STRING;}
 ({letra}|_)({letra}|{digito}|_)* {
     if(strlen(yytext) > 32){

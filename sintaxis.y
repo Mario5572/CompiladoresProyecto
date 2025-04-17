@@ -18,7 +18,7 @@
     void anade_operacion_lista_codigo(ListaC lc,char* op,char* reg,char* arg1,char* arg2);
     ListaC expresion_binop(ListaC l1,ListaC l2,char *op);
     ListaC expresion_unop(ListaC l1,char *op);
-    ListaC statement_asig(char* iden, ListaC l1, char* op);
+    ListaC statement_asig(char* iden, ListaC l1);
     ListaC cargaStringEnRegistro(int string_identifier, char* reg);
     char * cargaDireccionDeIdentificadorAUnRegistro(ListaC l1,char * ident);
     void imprimirLC(ListaC codigo);
@@ -29,6 +29,7 @@
     void statementIfElse(ListaC l,ListaC expresion,ListaC ltrue,ListaC lfalse);
     void statementWhile(ListaC l, ListaC condicion, ListaC codigo);
     void statementDoWhile(ListaC l, ListaC condicion, ListaC codigo);
+    ListaC statementFor(ListaC codigo_inicio,ListaC codigo_limite,ListaC codigo_actualizacion,ListaC codigo_bucle);
     ListaC expresion_relop(ListaC l1, ListaC l2, const char *op) ;
     char* obtenerReg();
     char* obtenerEtiq();
@@ -83,9 +84,12 @@
 %token GE ">="
 %token EQ "=="
 %token NE "!="
+%token FOR "for"
+%token FROM "from"
+%token TO "to"
 %token <cadena> STRING "string"
 
-%type <codigo> expresion statement statement_list declarations const_list print_item print_list read_list
+%type <codigo> expresion statement statement_list declarations const_list print_item print_list read_list asignation
 
 %define parse.error verbose
 
@@ -123,10 +127,10 @@ var_list      : ID  {printf("var_list -> ID(%s)\n",$1);
 
 const_list    : ID "=" expresion {printf("const_list -> ID(%s) = e\n",$1);
                                   insertaSimboloEnLista(tablaSimb,$1,CONSTANTE,0);
-                                  $$ = statement_asig($1,$3,"sw");}
+                                  $$ = statement_asig($1,$3);}
               | const_list "," ID "=" expresion {printf("const_list -> const_list , ID(%s) = e\n",$3);
                                                  insertaSimboloEnLista(tablaSimb,$3,CONSTANTE,0);
-                                                 if (errores == 0) concatenaLC($1,statement_asig($3,$5,"sw"));
+                                                 if (errores == 0) concatenaLC($1,statement_asig($3,$5));
                                                  $$ = $1;}
               ;
 
@@ -136,11 +140,8 @@ statement_list: statement_list statement {printf("statement_list -> statement_li
               | {$$ = creaLC();}
               ;
 
-statement     : ID "=" expresion ";" 
-                  { printf("statement -> ID = e ;\n"); 
-                    validarNoConstanteIdentificador(tablaSimb,$1);
-                     $$ = statement_asig($1,$3,"sw");
-                    }
+statement     : asignation ";"
+
               | "{" statement_list "}" { printf("statement -> { statement_list }\n"); 
                                          $$ = $2; }
               | IF "(" expresion ")" statement ELSE statement 
@@ -168,7 +169,19 @@ statement     : ID "=" expresion ";"
                   { printf("statement -> PRINT ( print_list ) ;\n"); $$ = $3; } 
               | READ "(" read_list ")" ";" 
                   { printf("statement -> READ ( read_list ) ;\n"); $$ = $3; }
+              
+              | FOR "(" statement  expresion ";" statement ")" statement
+                {
+                    $$ = statementFor($3,$4,$6,$8);
+                }
               ;
+
+asignation        :
+                ID "=" expresion 
+                  { printf("statement -> ID = e ;\n"); 
+                    validarNoConstanteIdentificador(tablaSimb,$1);
+                     $$ = statement_asig($1,$3);
+                    }
 
 print_list    : print_item {printf("print_list -> print_item\n"); $$ = $1;}
               | print_list "," print_item {printf("print_list -> print_list , print_item\n"); if (errores == 0) concatenaLC($1,$3); $$ = $1;}
@@ -276,7 +289,7 @@ ListaC expresion_unop(ListaC l1,char *op){
     insertaLC(l1,finalLC(l1),oper);
     return l1;
 }
-ListaC statement_asig(char* iden, ListaC l1, char* op){
+ListaC statement_asig(char* iden, ListaC l1){
     if(errores > 0) return NULL;
     Operacion oper;
     oper.op = "sw";
@@ -398,6 +411,26 @@ void statementDoWhile(ListaC l, ListaC condicion, ListaC codigo){
     concatenaLC(l,codigo);
     concatenaLC(l,condicion);
     insertaLC(l,finalLC(l),op2);
+}
+ListaC statementFor(ListaC codigo_inicio,ListaC codigo_limite,ListaC codigo_actualizacion,ListaC codigo_bucle){
+    ListaC l = creaLC();
+    char* eti1 = obtenerEtiq(); // Etiqueta para iterar otra vez el bucle
+    char* eti2 = obtenerEtiq(); //Etiqueta para salir del bucle
+    //Codigo de inicializacion del indice
+    concatenaLC(l,codigo_inicio);
+    //Etiqueta
+    anade_operacion_lista_codigo(l,"etiq",eti1,0,0);
+    //Ahora viene la compbrobacion 
+    concatenaLC(l,codigo_limite);
+    anade_operacion_lista_codigo(l,"beqz",recuperaResLC(codigo_limite),eti2,0);
+    //Ahora viene lo de dentro del for 
+    concatenaLC(l,codigo_bucle);
+    //Ahora vienel la actualizacion
+    concatenaLC(l,codigo_actualizacion);
+    anade_operacion_lista_codigo(l,"j",eti1,0,0);
+    anade_operacion_lista_codigo(l,"etiq",eti2,0,0);
+
+    return l;
 }
 ListaC expresion_relop(ListaC l1, ListaC l2, const char *op) {
     if (errores > 0) return NULL;

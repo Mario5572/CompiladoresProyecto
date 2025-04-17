@@ -27,6 +27,7 @@
     void leerIdentificador(ListaC l1,char* iden);
     void statementIf(ListaC l,ListaC expresion,ListaC statement);
     void statementIfElse(ListaC l,ListaC expresion,ListaC ltrue,ListaC lfalse);
+    void statementWhile(ListaC l, ListaC condicion, ListaC codigo);
     char* obtenerReg();
     char* obtenerEtiq();
     Operacion creaOp(char* op, char* res,char* arg1,char*arg2 );
@@ -143,9 +144,12 @@ statement     : ID "=" expresion ";"
                     $$ = creaLC();
                     statementIf($$,$3,$5); }
               | WHILE "(" expresion ")" statement 
-                  { printf("statement -> WHILE ( e ) statement\n"); }
+                  { printf("statement -> WHILE ( e ) statement\n"); 
+                    $$ = creaLC();
+                    statementWhile($$,$3,$5);
+                  }
               | PRINT "(" print_list ")" ";" 
-                  { printf("statement -> PRINT ( print_list ) ;\n"); $$ = $3; } // TODO AQUI VA LA LOGICA DE IMPRIMIR Y LIBERACION DE REGISTROSSS
+                  { printf("statement -> PRINT ( print_list ) ;\n"); $$ = $3; } 
               | READ "(" read_list ")" ";" 
                   { printf("statement -> READ ( read_list ) ;\n"); $$ = $3; }
               ;
@@ -338,6 +342,22 @@ void statementIfElse(ListaC l,ListaC expresion,ListaC ltrue,ListaC lfalse){
     insertaLC(l,finalLC(l),op3);
     concatenaLC(l,lfalse);
     Operacion op4 = creaOp("etiq",eti2,0,0);
+    insertaLC(l,finalLC(l),op4);
+}
+void statementWhile(ListaC l, ListaC condicion, ListaC codigo){
+    char *eti1 = obtenerEtiq(); // Etiqueta previa a la comprobacion de la condicion
+    char *eti2 = obtenerEtiq(); // Etiqueta de salida del bucle while
+    Operacion op1 = creaOp("etiq",eti1,0,0);
+    //Ahora vendria el codigo para calcular la condicion
+    Operacion op2 = creaOp("beqz",recuperaResLC(condicion),eti2,0);
+    //Ahora vendria el codigo de dentro del while
+    Operacion op3 = creaOp("j",eti1,0,0);
+    Operacion op4 = creaOp("etiq",eti2,0,0);
+    insertaLC(l,finalLC(l),op1);
+    concatenaLC(l,condicion);
+    insertaLC(l,finalLC(l),op2);
+    concatenaLC(l,codigo);
+    insertaLC(l,finalLC(l),op3);
     insertaLC(l,finalLC(l),op4);
 }
 char* obtenerReg(){

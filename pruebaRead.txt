@@ -1,16 +1,8 @@
 __main__(){
     var int a;
-    var int b;
-    b = 2;
-
-    if(b-2){
-        print("hola\n");
-    }
-    else{
-        b = 6;
-        print("Quee\n");
-        if(b){
-            print("si funciona\n");
-        }
+    a=4;
+    while(a){
+        print("a vale: ",a,"\n");
+        a=a-1;
     }
 }

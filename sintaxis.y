@@ -322,26 +322,31 @@ void leerIdentificador(ListaC l1,char* iden){
 }
 void statementIf(ListaC l, ListaC expresion, ListaC statement){
     char *etiq = obtenerEtiq();
+    //Codigo para calcular la expresion
     Operacion op1 = creaOp("beqz",recuperaResLC(expresion),etiq,0);
-    insertaLC(expresion,finalLC(expresion),op1);
-    concatenaLC(l,expresion);
-    concatenaLC(l,statement);
+    //Codigo del dentro del if
     Operacion op2 = creaOp("etiq",etiq,0,0);
+    concatenaLC(l,expresion);
+    insertaLC(l,finalLC(expresion),op1);
+    concatenaLC(l,statement);
     insertaLC(l,finalLC(l),op2);
 }
 void statementIfElse(ListaC l,ListaC expresion,ListaC ltrue,ListaC lfalse){
     char *eti1 = obtenerEtiq();
     char *eti2 = obtenerEtiq();
+    //Ahora vendria el codigo para calcular la expresion
+    Operacion op1 = creaOp("beqz",recuperaResLC(expresion),eti1,0); // Saltar al else si es 0
+    //Codigo de dentro del if
+    Operacion op2 = creaOp("j",eti2,0,0);   //Salto al final para no entrar en el else
+    Operacion op3 = creaOp("etiq",eti1,0,0); // Empieza el else
+    //Ahora va el codigo del else
+    Operacion op4 = creaOp("etiq",eti2,0,0);
     concatenaLC(l,expresion);
-    Operacion op1 = creaOp("beqz",recuperaResLC(expresion),eti1,0);
     insertaLC(l,finalLC(l),op1);
     concatenaLC(l,ltrue);
-    Operacion op2 = creaOp("j",eti2,0,0);
     insertaLC(l,finalLC(l),op2);
-    Operacion op3 = creaOp("etiq",eti1,0,0);
     insertaLC(l,finalLC(l),op3);
     concatenaLC(l,lfalse);
-    Operacion op4 = creaOp("etiq",eti2,0,0);
     insertaLC(l,finalLC(l),op4);
 }
 void statementWhile(ListaC l, ListaC condicion, ListaC codigo){

@@ -3,7 +3,14 @@ __main__(){
     var int b;
     b = 2;
 
-    if(b){
-        print("hola");
+    if(b-2){
+        print("hola\n");
+    }
+    else{
+        b = 6;
+        print("Quee\n");
+        if(b){
+            print("si funciona\n");
+        }
     }
 }

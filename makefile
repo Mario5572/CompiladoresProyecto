@@ -12,3 +12,6 @@ clean :
 
 run : ProyectoCompiladores prueba.txt
 	./ProyectoCompiladores prueba.txt
+
+exec : pruebaRead.txt ProyectoCompiladores
+	./ProyectoCompiladores pruebaRead.txt > output.asm && java -jar Mars.jar output.asm

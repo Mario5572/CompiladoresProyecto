@@ -1,4 +1,10 @@
 __main__(){
     const int armas = 6;
     print(3,armas-6,"He resuelto el standoff");
+    if(armas){
+        print("Holaaa");
+    }
+    else{
+        print("queee");
+    }
 }

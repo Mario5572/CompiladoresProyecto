@@ -21,12 +21,15 @@
     ListaC statement_asig(char* iden, ListaC l1, char* op);
     ListaC cargaStringEnRegistro(int string_identifier, char* reg);
     char * cargaDireccionDeIdentificadorAUnRegistro(ListaC l1,char * ident);
+    void imprimirLC(ListaC codigo);
     void imprimirRegistro(ListaC l1, char* reg);
     void imprimirFromMemoria(ListaC l1, char* ident);
     void leerIdentificador(ListaC l1,char* iden);
     void statementIf(ListaC l,ListaC expresion,ListaC statement);
+    void statementIfElse(ListaC l,ListaC expresion,ListaC ltrue,ListaC lfalse);
     char* obtenerReg();
     char* obtenerEtiq();
+    Operacion creaOp(char* op, char* res,char* arg1,char*arg2 );
     void liberarReg(char* i_str);
     const int n_registros = 9;
     int contador_etiq = 1;
@@ -131,7 +134,9 @@ statement     : ID "=" expresion ";"
               | IF "(" expresion ")" statement ELSE statement 
                   { printf("statement -> IF ( e ) statement ELSE statement\n"); 
                     $$ = creaLC();
-                    //statementIfElse($$,$3,$5,$7);
+                    statementIfElse($$,$3,$5,$7);
+                    printf("ATENCIONNNN");
+                    imprimirLC($$);
                   }
               | IF "(" expresion ")" statement 
                   { printf("statement -> IF ( e ) statement\n");
@@ -227,20 +232,12 @@ void inicializar() {
 }
 
 void anade_operacion_lista_codigo(ListaC lc,char* op,char* reg,char* arg1,char* arg2){
-    Operacion oper;
-    oper.op = op;
-    oper.res = reg;
-    oper.arg1 = arg1;
-    oper.arg2 = arg2;
+    Operacion oper = creaOp(op,reg,arg1,arg2);
     insertaLC(lc, finalLC(lc),oper);
 }
 ListaC expresion_binop(ListaC l1,ListaC l2,char *op){
     if(errores > 0) return NULL;
-    Operacion oper;
-    oper.op = op;
-    oper.res = recuperaResLC(l1);
-    oper.arg1 = recuperaResLC(l1);
-    oper.arg2 = recuperaResLC(l2);
+    Operacion oper = creaOp(op,recuperaResLC(l1),recuperaResLC(l1),recuperaResLC(l2));
     concatenaLC(l1,l2);
     insertaLC(l1,finalLC(l1),oper);
     liberarReg(oper.arg2); // Puedo liberar el registro de la expresion 2
@@ -248,11 +245,7 @@ ListaC expresion_binop(ListaC l1,ListaC l2,char *op){
 }
 ListaC expresion_unop(ListaC l1,char *op){
     if(errores > 0) return NULL;
-    Operacion oper;
-    oper.op = op;
-    oper.res = recuperaResLC(l1);
-    oper.arg1 = recuperaResLC(l1);
-    oper.arg2 = NULL;
+    Operacion oper = creaOp(op,recuperaResLC(l1),recuperaResLC(l1),0);
     insertaLC(l1,finalLC(l1),oper);
     return l1;
 }
@@ -260,10 +253,10 @@ ListaC statement_asig(char* iden, ListaC l1, char* op){
     if(errores > 0) return NULL;
     Operacion oper;
     oper.op = "sw";
-    asprintf(&oper.arg1,"%s",recuperaResLC(l1)); //En el primer parametro del sw va el registro donde se encuentran los datos a cargar
-    asprintf(&oper.arg2,"_%s",iden); //En el segundo paraemtro del sw ira el _identificador 
+    asprintf(&oper.res,"%s",recuperaResLC(l1)); //En el primer parametro del sw va el registro donde se encuentran los datos a cargar
+    asprintf(&oper.arg1,"_%s",iden); //En el segundo paraemtro del sw ira el _identificador 
     // usado para cargar la dir de nuestra variable
-    oper.res = 0;
+    oper.arg2 = 0;
     insertaLC(l1,finalLC(l1),oper);
     liberarReg(recuperaResLC(l1)); // Creo que tambien puedo liberar este registro que el que almacena el valor de la expresion
     return l1;
@@ -274,9 +267,9 @@ char * cargaDireccionDeIdentificadorAUnRegistro(ListaC l1,char * ident){
     Operacion cargarMem;
     cargarMem.op = "la";
     char* registro = obtenerReg();
-    cargarMem.arg1 = registro;
-    asprintf(&cargarMem.arg2,"_%s",ident);
-    cargarMem.res = 0;
+    cargarMem.res = registro;
+    asprintf(&cargarMem.arg1,"_%s",ident);
+    cargarMem.arg2 = 0;
     insertaLC(l1,finalLC(l1),cargarMem);
     return registro;
 }
@@ -291,80 +284,61 @@ ListaC cargaStringEnRegistro(int string_identifier, char* reg){
 void imprimirFromMemoria(ListaC l1, char* ident){
 
     //Movemos el valor de memoria a $a0
-    Operacion op1;
-    op1.op = "lw";
-    op1.res = "$a0";
+    Operacion op1 = creaOp("la","$a0",0,0);
     asprintf(&op1.arg1,"%s",ident);
-    op1.arg2 = 0;
     insertaLC(l1,finalLC(l1),op1);
     //Movemos el valor 4 al registro $v0
-    Operacion op2;
-    op2.op = "li";
-    op2.res = "$v0";
-    op2.arg1 = "4";
-    op2.arg2 = 0;
+    Operacion op2 = creaOp("li","$v0","4",0);
     insertaLC(l1,finalLC(l1),op2);
     //Finalmente hacemos un syscall
-    Operacion op3;
-    op3.op = "syscall";
-    op3.arg1 = op3.arg2 = op3.res = 0;
+    Operacion op3 = creaOp("syscall",0,0,0);
     insertaLC(l1,finalLC(l1),op3);
 }
 void imprimirRegistro(ListaC l1, char* reg){
 
     //Movemos el valor del registro a $a0
-    Operacion op1;
-    op1.op = "move";
-    op1.res = "$a0";
+    Operacion op1 = creaOp("move","$a0",0,0);
     asprintf(&op1.arg1,"%s",reg);
-    op1.arg2 = 0;
     insertaLC(l1,finalLC(l1),op1);
     //Movemos el valor 4 al registro $v0
-    Operacion op2;
-    op2.op = "li";
-    op2.res = "$v0";
-    op2.arg1 = "1";
-    op2.arg2 = 0;
+    Operacion op2 = creaOp("li","$v0","1",0);
     insertaLC(l1,finalLC(l1),op2);
     //Finalmente hacemos un syscall
-    Operacion op3;
-    op3.op = "syscall";
-    op3.arg1 = op3.arg2 = op3.res = 0;
+    Operacion op3 = creaOp("syscall",0,0,0);
     insertaLC(l1,finalLC(l1),op3);
 }
 void leerIdentificador(ListaC l1,char* iden){
-    Operacion op1;
-    op1.op = "li";
-    op1.res = "$v0";
-    op1.arg1 = "5";
-    op1.arg2 = 0;
+    Operacion op1 = creaOp("li","$v0","5",0);
     insertaLC(l1,finalLC(l1),op1);
-    Operacion op2;
-    op2.op = "syscall";
-    op2.res = op2.arg1 = op2.arg2 = 0;
+    Operacion op2 = creaOp("syscall",0,0,0);
     insertaLC(l1,finalLC(l1),op2);
-    Operacion op3;
-    op3.op = "sw";
-    op3.res = "$v0";
+    Operacion op3 = creaOp("sw","$v0",0,0);
     asprintf(&op3.arg1,"_%s",iden);
-    op3.arg2 = 0;
     insertaLC(l1,finalLC(l1),op3);
 }
 void statementIf(ListaC l, ListaC expresion, ListaC statement){
     char *etiq = obtenerEtiq();
-    Operacion op1;
-    op1.op = "beqz";
-    op1.res = recuperaResLC(expresion);
-    op1.arg1 = etiq;
-    op1.arg2 = 0;
+    Operacion op1 = creaOp("beqz",recuperaResLC(expresion),etiq,0);
     insertaLC(expresion,finalLC(expresion),op1);
     concatenaLC(l,expresion);
     concatenaLC(l,statement);
-    Operacion op2;
-    op2.op = "etiq";
-    op2.res = etiq;
-    op2.arg1 = op2.arg2 = 0;
+    Operacion op2 = creaOp("etiq",etiq,0,0);
     insertaLC(l,finalLC(l),op2);
+}
+void statementIfElse(ListaC l,ListaC expresion,ListaC ltrue,ListaC lfalse){
+    char *eti1 = obtenerEtiq();
+    char *eti2 = obtenerEtiq();
+    concatenaLC(l,expresion);
+    Operacion op1 = creaOp("beqz",recuperaResLC(expresion),eti1,0);
+    insertaLC(l,finalLC(l),op1);
+    concatenaLC(l,ltrue);
+    Operacion op2 = creaOp("j",eti2,0,0);
+    insertaLC(l,finalLC(l),op2);
+    Operacion op3 = creaOp("etiq",eti1,0,0);
+    insertaLC(l,finalLC(l),op3);
+    concatenaLC(l,lfalse);
+    Operacion op4 = creaOp("etiq",eti2,0,0);
+    insertaLC(l,finalLC(l),op4);
 }
 char* obtenerReg(){
     for(int i=0;i<n_registros;i++){
@@ -426,7 +400,7 @@ Simbolo insertaSimboloEnLista(Lista tablaSimb,char *nombre, Tipo tipo, int valor
     s.nombre = malloc(strlen(nombre)+1);
     strcpy(s.nombre, nombre);
     s.tipo = tipo;
-    s.valor = 0;
+    s.valor = valor;
     insertaLS(tablaSimb,finalLS(tablaSimb),s);
     return s;
 } 
@@ -490,6 +464,8 @@ void imprimirLC(ListaC codigo){
     PosicionListaC p = inicioLC(codigo);
     Operacion oper;
     printf(".text\n");
+    printf(".globl main\n");
+    printf("main:\n");
     while (p != finalLC(codigo)) {
     oper = recuperaLC(codigo,p);
     if(!strcmp(oper.op,"etiq")){
@@ -503,16 +479,30 @@ void imprimirLC(ListaC codigo){
     }
     p = siguienteLC(codigo,p);
   }
+  printf("li $v0, 10\n");
+  printf("syscall");
 }
 void comprobaciones_finales(ListaC l){
     mostrarListaSimbolos(tablaSimb);
     printf("\n\n -------------HA HABIDO %d ERRORES-----------------\n\n", errores);
     if (errores == 0){
-        printf("\n\n ----------- SEGMENTO DE DATOS --------------\n\n");
+        if (!freopen("output.asm","w", stdout)) {
+            perror("No pudo volcar el codigo mips en output.asm");
+            exit(1);
+        }
+        //printf("\n\n ----------- SEGMENTO DE DATOS --------------\n\n");
         imprimirTablaSimbolos();
-        printf("\n\n ----------- INSTRUCCIONES MIPS --------------\n\n");
+        //printf("\n\n ----------- INSTRUCCIONES MIPS --------------\n\n");
         imprimirLC(l);
     }
     liberaListaSimbolos(tablaSimb);
     
+}
+Operacion creaOp(char* op, char* res,char* arg1,char*arg2 ){
+    Operacion oper;
+    oper.op = op;
+    oper.res = res;
+    oper.arg1 = arg1;
+    oper.arg2 = arg2;
+    return oper;
 }

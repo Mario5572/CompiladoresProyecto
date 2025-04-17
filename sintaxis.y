@@ -327,7 +327,7 @@ void statementIf(ListaC l, ListaC expresion, ListaC statement){
     //Codigo del dentro del if
     Operacion op2 = creaOp("etiq",etiq,0,0);
     concatenaLC(l,expresion);
-    insertaLC(l,finalLC(expresion),op1);
+    insertaLC(l,finalLC(l),op1);
     concatenaLC(l,statement);
     insertaLC(l,finalLC(l),op2);
 }

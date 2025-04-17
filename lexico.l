@@ -56,6 +56,7 @@ errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-\?:]+
 "else"      {return ELSE;}
 "while"     {return WHILE;}
 "read"      {return READ;}
+"do"        {return DO;}
 \"([^"\n\\]|\\.)*\"      {yylval.cadena = yytext; return STRING;}
 ({letra}|_)({letra}|{digito}|_)* {
     if(strlen(yytext) > 32){

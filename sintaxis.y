@@ -28,6 +28,7 @@
     void statementIf(ListaC l,ListaC expresion,ListaC statement);
     void statementIfElse(ListaC l,ListaC expresion,ListaC ltrue,ListaC lfalse);
     void statementWhile(ListaC l, ListaC condicion, ListaC codigo);
+    void statementDoWhile(ListaC l, ListaC condicion, ListaC codigo);
     char* obtenerReg();
     char* obtenerEtiq();
     Operacion creaOp(char* op, char* res,char* arg1,char*arg2 );
@@ -73,6 +74,7 @@
 %token IF "if"
 %token ELSE "else"
 %token WHILE "while"
+%token DO "do"
 %token READ "read"
 %token <cadena> STRING "string"
 
@@ -147,6 +149,11 @@ statement     : ID "=" expresion ";"
                   { printf("statement -> WHILE ( e ) statement\n"); 
                     $$ = creaLC();
                     statementWhile($$,$3,$5);
+                  }
+              | DO statement WHILE "(" expresion ")"  
+                  { 
+                    $$ = creaLC();
+                    statementDoWhile($$,$5,$2);
                   }
               | PRINT "(" print_list ")" ";" 
                   { printf("statement -> PRINT ( print_list ) ;\n"); $$ = $3; } 
@@ -364,6 +371,17 @@ void statementWhile(ListaC l, ListaC condicion, ListaC codigo){
     concatenaLC(l,codigo);
     insertaLC(l,finalLC(l),op3);
     insertaLC(l,finalLC(l),op4);
+}
+void statementDoWhile(ListaC l, ListaC condicion, ListaC codigo){
+    char *eti1 = obtenerEtiq();
+    Operacion op1 = creaOp("etiq",eti1,0,0);
+    //Ahora iria el codigo del do
+    //Ahora calculariamos la expresion de la condicion
+    Operacion op2 = creaOp("bnez",recuperaResLC(condicion),eti1,0); // Saltamos si la condicion es != 0 
+    insertaLC(l,finalLC(l),op1);
+    concatenaLC(l,codigo);
+    concatenaLC(l,condicion);
+    insertaLC(l,finalLC(l),op2);
 }
 char* obtenerReg(){
     for(int i=0;i<n_registros;i++){

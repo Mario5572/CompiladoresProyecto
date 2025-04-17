@@ -1,8 +1,8 @@
-__main__(){
-    var int a;
-    a=4;
-    while(a){
-        print("a vale: ",a,"\n");
-        a=a-1;
-    }
-}
+prueba() {
+    var int c;
+
+    c=0;
+    do{
+        print("holal\n");
+    }while(c)
+ }

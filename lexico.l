@@ -57,6 +57,12 @@ errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-\?:]+
 "while"     {return WHILE;}
 "read"      {return READ;}
 "do"        {return DO;}
+"=="        { return EQ; }
+"!="        { return NE; }
+"<="        { return LE; }
+">="        { return GE; }
+"<"         { return LT; }
+">"         { return GT; }
 \"([^"\n\\]|\\.)*\"      {yylval.cadena = yytext; return STRING;}
 ({letra}|_)({letra}|{digito}|_)* {
     if(strlen(yytext) > 32){

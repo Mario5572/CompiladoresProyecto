@@ -1,8 +1,9 @@
 prueba() {
     var int c;
-
-    c=0;
-    do{
-        print("holal\n");
-    }while(c)
+    c=4;
+    print(c!=3,"\n");
+    read(c);
+    if(c > 3){
+        print("c es mayor que 3");
+    }
  }

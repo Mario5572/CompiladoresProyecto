@@ -29,6 +29,7 @@
     void statementIfElse(ListaC l,ListaC expresion,ListaC ltrue,ListaC lfalse);
     void statementWhile(ListaC l, ListaC condicion, ListaC codigo);
     void statementDoWhile(ListaC l, ListaC condicion, ListaC codigo);
+    ListaC expresion_relop(ListaC l1, ListaC l2, const char *op) ;
     char* obtenerReg();
     char* obtenerEtiq();
     Operacion creaOp(char* op, char* res,char* arg1,char*arg2 );
@@ -76,6 +77,12 @@
 %token WHILE "while"
 %token DO "do"
 %token READ "read"
+%token LT " < "
+%token GT " > "
+%token LE "<="
+%token GE ">="
+%token EQ "=="
+%token NE "!="
 %token <cadena> STRING "string"
 
 %type <codigo> expresion statement statement_list declarations const_list print_item print_list read_list
@@ -87,6 +94,8 @@
 // Asociatividad izquierda %right MAS
 // No tiene asociatividad %nonassoc MAS
 // Los operadores cuya asociatividad se define primero tienen menos precedencia
+
+%nonassoc LT GT LE GE EQ NE
 %left "+" "-" 
 %left "*" "/"
 
@@ -226,6 +235,13 @@ expresion : expresion "+" expresion   { printf("e->e+e\n");
                                      }
           | "-" expresion           { printf("e->-e\n"); 
                                       $$ = expresion_unop($2,"neg"); }
+
+          | expresion LT  expresion  { $$ = expresion_relop($1,$3,"<");  }
+          | expresion GT  expresion  { $$ = expresion_relop($1,$3,">");  }
+          | expresion LE  expresion  { $$ = expresion_relop($1,$3,"<="); }
+          | expresion GE  expresion  { $$ = expresion_relop($1,$3,">="); }
+          | expresion EQ  expresion  { $$ = expresion_relop($1,$3,"=="); }
+          | expresion NE  expresion  { $$ = expresion_relop($1,$3,"!="); }
           ;
 
 %%
@@ -383,6 +399,57 @@ void statementDoWhile(ListaC l, ListaC condicion, ListaC codigo){
     concatenaLC(l,condicion);
     insertaLC(l,finalLC(l),op2);
 }
+ListaC expresion_relop(ListaC l1, ListaC l2, const char *op) {
+    if (errores > 0) return NULL;
+
+    /* 1) combinar código de los dos operandos */
+    char *r1 = recuperaResLC(l1);
+    char *r2 = recuperaResLC(l2);
+    concatenaLC(l1, l2);
+
+    char *dest = obtenerReg();
+
+    if (strcmp(op, "<") == 0) {
+        anade_operacion_lista_codigo(l1,"slt",dest, r1,r2);
+    }
+    else if (strcmp(op, ">") == 0) {
+        anade_operacion_lista_codigo(l1,"slt",dest,r2,r1);
+    }
+    else if (strcmp(op, "<=") == 0) {
+        char *tmp = obtenerReg();
+        // aqui hacemos un > y luego con el xori le damos la vuelta para que sea <=
+        anade_operacion_lista_codigo(l1,"slt",tmp,r2,r1);
+        anade_operacion_lista_codigo(l1,"xori", dest,tmp,"1");
+        liberarReg(tmp);
+    }
+    else if (strcmp(op, ">=") == 0) {
+        //lo mismo que el apartado anterior
+        char *tmp = obtenerReg();
+        anade_operacion_lista_codigo(l1,"slt",tmp, r1,r2);
+        anade_operacion_lista_codigo(l1,"xori",dest,tmp,"1");
+        liberarReg(tmp);
+    }
+    else if (strcmp(op, "==") == 0) {
+        // hacemos un xor y luego le damos la vuelta
+        anade_operacion_lista_codigo(l1,"xor",dest, r1,r2); // dest Valdra 0 si son iguales y distinto de 0 si son distintos
+        anade_operacion_lista_codigo(l1, "sltiu", dest, dest, "1"); //si dest vale 0 entonces 0<1 => el nuevo dest=1
+        //si dest !=0 entonces dest !< 1 luego en dest quedara 0 como queriamos
+    }
+    else if (strcmp(op, "!=") == 0) {
+        anade_operacion_lista_codigo(l1, "xor", dest, r1, r2);
+    }
+    else {
+        yyerror("operador relacional desconocido");
+    }
+
+    /* liberamos los regs originales y guardamos el resultado */
+    //Podiamos haber usado r1 como registro destino pero para mejorar la legibilidad lo haremos asi
+    liberarReg(r1);
+    liberarReg(r2);
+    guardaResLC(l1, dest);
+    return l1;
+}
+
 char* obtenerReg(){
     for(int i=0;i<n_registros;i++){
         if(!registros_en_uso[i]) {

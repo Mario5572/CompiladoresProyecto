@@ -2,7 +2,7 @@ prueba() {
     var int c;
     c=2;
 
-    for(print("esto esta cursed\n") ; c<10 ; c = c*2-1; ){
+    for(c = 3; c<10 ; c = c*2-1 ){
         print("hola\n");
     }
 

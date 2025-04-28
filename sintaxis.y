@@ -170,9 +170,9 @@ statement     : asignation ";"
               | READ "(" read_list ")" ";" 
                   { printf("statement -> READ ( read_list ) ;\n"); $$ = $3; }
               
-              | FOR "(" statement  expresion ";" statement ")" statement
+              | FOR "(" asignation ";"  expresion ";" asignation ")" statement
                 {
-                    $$ = statementFor($3,$4,$6,$8);
+                    $$ = statementFor($3,$5,$7,$9);
                 }
               ;
 

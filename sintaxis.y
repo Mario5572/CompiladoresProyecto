@@ -359,6 +359,7 @@ void leerIdentificador(ListaC l1,char* iden){
 void statementIf(ListaC l, ListaC expresion, ListaC statement){
     char *etiq = obtenerEtiq();
     //Codigo para calcular la expresion
+    liberarReg(recuperaResLC(expresion));
     Operacion op1 = creaOp("beqz",recuperaResLC(expresion),etiq,0);
     //Codigo del dentro del if
     Operacion op2 = creaOp("etiq",etiq,0,0);
@@ -366,6 +367,7 @@ void statementIf(ListaC l, ListaC expresion, ListaC statement){
     insertaLC(l,finalLC(l),op1);
     concatenaLC(l,statement);
     insertaLC(l,finalLC(l),op2);
+    
 }
 void statementIfElse(ListaC l,ListaC expresion,ListaC ltrue,ListaC lfalse){
     char *eti1 = obtenerEtiq();
@@ -378,6 +380,7 @@ void statementIfElse(ListaC l,ListaC expresion,ListaC ltrue,ListaC lfalse){
     //Ahora va el codigo del else
     Operacion op4 = creaOp("etiq",eti2,0,0);
     concatenaLC(l,expresion);
+    liberarReg(recuperaResLC(expresion));
     insertaLC(l,finalLC(l),op1);
     concatenaLC(l,ltrue);
     insertaLC(l,finalLC(l),op2);
@@ -396,6 +399,7 @@ void statementWhile(ListaC l, ListaC condicion, ListaC codigo){
     Operacion op4 = creaOp("etiq",eti2,0,0);
     insertaLC(l,finalLC(l),op1);
     concatenaLC(l,condicion);
+    liberarReg(recuperaResLC(condicion));
     insertaLC(l,finalLC(l),op2);
     concatenaLC(l,codigo);
     insertaLC(l,finalLC(l),op3);
@@ -411,6 +415,7 @@ void statementDoWhile(ListaC l, ListaC condicion, ListaC codigo){
     concatenaLC(l,codigo);
     concatenaLC(l,condicion);
     insertaLC(l,finalLC(l),op2);
+    liberarReg(recuperaResLC(condicion));
 }
 ListaC statementFor(ListaC codigo_inicio,ListaC codigo_limite,ListaC codigo_actualizacion,ListaC codigo_bucle){
     ListaC l = creaLC();
@@ -422,6 +427,7 @@ ListaC statementFor(ListaC codigo_inicio,ListaC codigo_limite,ListaC codigo_actu
     anade_operacion_lista_codigo(l,"etiq",eti1,0,0);
     //Ahora viene la compbrobacion 
     concatenaLC(l,codigo_limite);
+    liberarReg(recuperaResLC(codigo_limite));
     anade_operacion_lista_codigo(l,"beqz",recuperaResLC(codigo_limite),eti2,0);
     //Ahora viene lo de dentro del for 
     concatenaLC(l,codigo_bucle);
@@ -489,6 +495,7 @@ char* obtenerReg(){
             char* buff;
             asprintf(&buff,"$t%d",i);
             registros_en_uso[i] = true;
+            printf("Te quito el t%d\n",i);
             return buff;
         }
     }
@@ -500,7 +507,7 @@ char* obtenerEtiq(){
     return etiq;
 }
 void liberarReg(char* i_str){
-    printf("Voy a liberar el reg ");
+    printf("Voy a liberar el reg %s",i_str);
     int i = i_str[2] - '0';
     if(!registros_en_uso[i]){
         printf("Se ha intentado liberar un registro no usado\n");

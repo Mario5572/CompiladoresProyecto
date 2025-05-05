@@ -12,7 +12,7 @@
     Lista tablaSimb;
     int contCadenas=0;
     Simbolo insertaSimboloEnLista(Lista tablaSimb,char *nombre, Tipo tipo, int valor);
-    void comprobaciones_finales();
+    void finalizarYGenerarCodigo();
     bool validarNoConstanteIdentificador(Lista l, char *nombre);
     bool validarExistenciaDeIdentificador(Lista lista, char *nombre);
     void anade_operacion_lista_codigo(ListaC lc,char* op,char* reg,char* arg1,char* arg2);
@@ -69,7 +69,6 @@
 %token QUES "?"
 %token DOSP ":"
 %token PRINT "print"
-%token MAIN "main"
 %token VAR "var"
 %token CONST "const"
 %token INT "int"
@@ -85,8 +84,6 @@
 %token EQ "=="
 %token NE "!="
 %token FOR "for"
-%token FROM "from"
-%token TO "to"
 %token <cadena> STRING "string"
 
 %type <codigo> expresion statement statement_list declarations const_list print_item print_list read_list asignation
@@ -107,7 +104,7 @@
 
 %%
   
-program   : { inicializar(); } ID "(" ")" "{" declarations statement_list "}"  {if (errores == 0) concatenaLC($6,$7); comprobaciones_finales($6);}
+program   : { inicializar(); } ID "(" ")" "{" declarations statement_list "}"  {if (errores == 0) concatenaLC($6,$7); finalizarYGenerarCodigo($6);}
           ;
 
 declarations  : declarations VAR tipo var_list ";" {printf("d -> d var t var_list\n"); $$ = $1;}
@@ -613,7 +610,7 @@ void imprimirLC(ListaC codigo){
     oper = recuperaLC(codigo,p);
     if(!strcmp(oper.op,"etiq")){
         printf("%s:\n",oper.res);
-    }else{ //TENGO QUE ARREGLAR LO DE LAS COMAS 
+    }else{ 
     printf("%s",oper.op);
     if (oper.res) printf(" %s",oper.res);
     if (oper.arg1) printf(", %s",oper.arg1);
@@ -625,7 +622,7 @@ void imprimirLC(ListaC codigo){
   printf("li $v0, 10\n");
   printf("syscall");
 }
-void comprobaciones_finales(ListaC l){
+void finalizarYGenerarCodigo(ListaC l){
     mostrarListaSimbolos(tablaSimb);
     printf("\n\n -------------HA HABIDO %d ERRORES-----------------\n\n", errores);
     if (errores == 0){

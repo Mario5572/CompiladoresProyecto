@@ -10,8 +10,8 @@ sintaxis.tab.h sintaxis.tab.c : sintaxis.y
 clean :
 	rm -f ProyectoCompiladores sintaxis.tab.* lex.yy.c sintaxis.output
 
-run : ProyectoCompiladores pruebaRead.txt
-	./ProyectoCompiladores pruebaRead.txt
+run : ProyectoCompiladores prueba.txt
+	./ProyectoCompiladores prueba.txt
 
-exec : pruebaRead.txt ProyectoCompiladores
-	./ProyectoCompiladores pruebaRead.txt > output.asm && java -jar Mars.jar output.asm
+exec : prueba.txt ProyectoCompiladores
+	./ProyectoCompiladores prueba.txt > output.asm && java -jar Mars.jar output.asm

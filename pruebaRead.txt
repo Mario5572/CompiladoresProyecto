@@ -1,9 +1,13 @@
 prueba() {
-    var int c;
-    c=2;
-
-    for(c = 3; c<10 ; c = c*2-1 ){
-        print("hola\n");
-    }
-
- }
+const int a=0, b=0;
+var int c;
+print ("Inicio del programa\n");
+c = 5+2-2;
+if (a) 
+   if (b) 
+        if (c)
+            {
+                  print ("c = ",c,"\n");
+            }
+  print ("Final","\n");
+}

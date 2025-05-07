@@ -386,6 +386,7 @@ void statementIfElse(ListaC l,ListaC expresion,ListaC ltrue,ListaC lfalse){
     insertaLC(l,finalLC(l),op4);
 }
 void statementWhile(ListaC l, ListaC condicion, ListaC codigo){
+    if(errores > 0) return;
     char *eti1 = obtenerEtiq(); // Etiqueta previa a la comprobacion de la condicion
     char *eti2 = obtenerEtiq(); // Etiqueta de salida del bucle while
     Operacion op1 = creaOp("etiq",eti1,0,0);
@@ -403,6 +404,7 @@ void statementWhile(ListaC l, ListaC condicion, ListaC codigo){
     insertaLC(l,finalLC(l),op4);
 }
 void statementDoWhile(ListaC l, ListaC condicion, ListaC codigo){
+    if(errores > 0) return;
     char *eti1 = obtenerEtiq();
     Operacion op1 = creaOp("etiq",eti1,0,0);
     //Ahora iria el codigo del do
@@ -415,6 +417,7 @@ void statementDoWhile(ListaC l, ListaC condicion, ListaC codigo){
     liberarReg(recuperaResLC(condicion));
 }
 ListaC statementFor(ListaC codigo_inicio,ListaC codigo_limite,ListaC codigo_actualizacion,ListaC codigo_bucle){
+    if(errores > 0) return;
     ListaC l = creaLC();
     char* eti1 = obtenerEtiq(); // Etiqueta para iterar otra vez el bucle
     char* eti2 = obtenerEtiq(); //Etiqueta para salir del bucle

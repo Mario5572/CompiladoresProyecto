@@ -11,10 +11,10 @@
     #include "listaCodigo.h"
     Lista tablaSimb;
     int contCadenas=0;
-    Simbolo insertaSimboloEnLista(Lista tablaSimb,char *nombre, Tipo tipo, int valor);
+    Simbolo insertaSimboloEnLista(Lista tablaSimb,char *nombre, Tipo tipo, int valor,int linea);
     void finalizarYGenerarCodigo();
-    bool validarNoConstanteIdentificador(Lista l, char *nombre);
-    bool validarExistenciaDeIdentificador(Lista lista, char *nombre);
+    bool validarNoConstanteIdentificador(Lista l, char *nombre,int linea);
+    bool validarExistenciaDeIdentificador(Lista lista, char *nombre, int linea);
     void anade_operacion_lista_codigo(ListaC lc,char* op,char* reg,char* arg1,char* arg2);
     ListaC expresion_binop(ListaC l1,ListaC l2,char *op);
     ListaC expresion_unop(ListaC l1,char *op);
@@ -107,31 +107,31 @@
 program   : { inicializar(); } ID "(" ")" "{" declarations statement_list "}"  {if (errores == 0) concatenaLC($6,$7); finalizarYGenerarCodigo($6);}
           ;
 
-declarations  : declarations VAR tipo var_list ";" {printf("d -> d var t var_list\n"); $$ = $1;}
-            | declarations CONST tipo const_list ";" {printf("d -> d const t const_list\n");
+declarations  : declarations VAR tipo var_list ";" {$$ = $1;}
+            | declarations CONST tipo const_list ";" {
                                                       if (errores == 0) concatenaLC($1,$4); $$ = $1;}
             | {$$ = creaLC();}
             ;
 
-tipo          : INT {printf("t -> INT\n");}
+tipo          : INT {}
 
-var_list      : ID  {printf("var_list -> ID(%s)\n",$1);
-                     insertaSimboloEnLista(tablaSimb,$1,VARIABLE,0);
+var_list      : ID  {
+                     insertaSimboloEnLista(tablaSimb,$1,VARIABLE,0,yylineno);
                      }
-              | var_list ID {printf("var_list -> var_list ID(%s)\n",$2);
-                             insertaSimboloEnLista(tablaSimb,$2,VARIABLE,0);}
+              | var_list ID {
+                             insertaSimboloEnLista(tablaSimb,$2,VARIABLE,0,yylineno);}
               ;
 
-const_list    : ID "=" expresion {printf("const_list -> ID(%s) = e\n",$1);
-                                  insertaSimboloEnLista(tablaSimb,$1,CONSTANTE,0);
+const_list    : ID "=" expresion {
+                                  insertaSimboloEnLista(tablaSimb,$1,CONSTANTE,0,yylineno);
                                   $$ = statement_asig($1,$3);}
-              | const_list "," ID "=" expresion {printf("const_list -> const_list , ID(%s) = e\n",$3);
-                                                 insertaSimboloEnLista(tablaSimb,$3,CONSTANTE,0);
+              | const_list "," ID "=" expresion {
+                                                 insertaSimboloEnLista(tablaSimb,$3,CONSTANTE,0,yylineno);
                                                  if (errores == 0) concatenaLC($1,statement_asig($3,$5));
                                                  $$ = $1;}
               ;
 
-statement_list: statement_list statement {printf("statement_list -> statement_list statement\n");
+statement_list: statement_list statement {
                                           if (errores == 0) concatenaLC($1,$2);
                                           $$ = $1;}
               | {$$ = creaLC();}
@@ -139,21 +139,19 @@ statement_list: statement_list statement {printf("statement_list -> statement_li
 
 statement     : asignation ";"
 
-              | "{" statement_list "}" { printf("statement -> { statement_list }\n"); 
+              | "{" statement_list "}" {
                                          $$ = $2; }
               | IF "(" expresion ")" statement ELSE statement 
-                  { printf("statement -> IF ( e ) statement ELSE statement\n"); 
+                  { 
                     $$ = creaLC();
                     statementIfElse($$,$3,$5,$7);
-                    printf("ATENCIONNNN");
-                    imprimirLC($$);
                   }
               | IF "(" expresion ")" statement 
-                  { printf("statement -> IF ( e ) statement\n");
+                  { 
                     $$ = creaLC();
                     statementIf($$,$3,$5); }
               | WHILE "(" expresion ")" statement 
-                  { printf("statement -> WHILE ( e ) statement\n"); 
+                  { 
                     $$ = creaLC();
                     statementWhile($$,$3,$5);
                   }
@@ -163,32 +161,33 @@ statement     : asignation ";"
                     statementDoWhile($$,$5,$2);
                   }
               | PRINT "(" print_list ")" ";" 
-                  { printf("statement -> PRINT ( print_list ) ;\n"); $$ = $3; } 
+                  {  $$ = $3; } 
               | READ "(" read_list ")" ";" 
-                  { printf("statement -> READ ( read_list ) ;\n"); $$ = $3; }
+                  { $$ = $3; }
               
               | FOR "(" asignation ";"  expresion ";" asignation ")" statement
                 {
                     $$ = statementFor($3,$5,$7,$9);
                 }
+              | error ";" {$$ = NULL; errores++; } 
               ;
 
 asignation        :
                 ID "=" expresion 
-                  { printf("statement -> ID = e ;\n"); 
-                    validarNoConstanteIdentificador(tablaSimb,$1);
+                  { 
+                    validarNoConstanteIdentificador(tablaSimb,$1,yylineno);
                      $$ = statement_asig($1,$3);
                     }
 
-print_list    : print_item {printf("print_list -> print_item\n"); $$ = $1;}
+print_list    : print_item { $$ = $1;}
               | print_list "," print_item {printf("print_list -> print_list , print_item\n"); if (errores == 0) concatenaLC($1,$3); $$ = $1;}
               ;
 
-print_item    : expresion  {printf("print_item -> e\n"); imprimirRegistro($1,recuperaResLC($1));
+print_item    : expresion  { imprimirRegistro($1,recuperaResLC($1));
                                                                           liberarReg(recuperaResLC($1));
                                                                           $$ = $1;}
-              | STRING     {printf("print_item -> %s\n",$1);
-                            Simbolo s = insertaSimboloEnLista(tablaSimb,$1,CADENA,strIdentifier++);
+              | STRING     {
+                            Simbolo s = insertaSimboloEnLista(tablaSimb,$1,CADENA,strIdentifier++,yylineno);
                             $$ = creaLC();
                             char* ident;
                             asprintf(&ident,"$str%d",s.valor);
@@ -197,42 +196,39 @@ print_item    : expresion  {printf("print_item -> e\n"); imprimirRegistro($1,rec
 
               ;
 
-read_list     : ID          {printf("read_list -> id");
-                             validarNoConstanteIdentificador(tablaSimb,$1);
+read_list     : ID          {
+                             validarNoConstanteIdentificador(tablaSimb,$1,yylineno);
                              $$ = creaLC();
                              leerIdentificador($$,$1);
                              }
-              | read_list "," ID  {printf("read_list -> read_list , ID\n");
-                                   validarNoConstanteIdentificador(tablaSimb,$3);
+              | read_list "," ID  {
+                                   validarNoConstanteIdentificador(tablaSimb,$3,yylineno);
                                    $$ = $1;
                                    leerIdentificador($$,$3);
                                    }
               ;
 
 
-expresion : expresion "+" expresion   { printf("e->e+e\n");
+expresion : expresion "+" expresion   { 
                                       $$ = expresion_binop($1,$3,"add"); }
-          | expresion "-" expresion   { printf("e->e-e\n");
+          | expresion "-" expresion   { 
                                         $$ = expresion_binop($1,$3,"sub"); }
-          | expresion "*" expresion   { printf("e->e*e\n");
+          | expresion "*" expresion   {
                                         $$ = expresion_binop($1,$3,"mul");}
-          | expresion "/" expresion   { printf("e->e/e\n"); 
-                                      if ($3 == 0) {
-                                        printf("División por cero\n");
-                                        exit(1);
-                                      }
+          | expresion "/" expresion   {
+                                      
                                       $$ = expresion_binop($1,$3,"div");
                                     }
           
           | "(" expresion "?" expresion ":" expresion ")" { $$ = creaLC();}
 
-          | NUM                     { printf("e->NUM %s\n", $1);
+          | NUM                     {
                                      $$ = creaLC();
                                      char* reg = obtenerReg();
                                      anade_operacion_lista_codigo($$,"li",reg,$1,NULL);
                                      guardaResLC($$,reg);}
-          | ID                     { printf("e->ID %s\n", $1); 
-                                      validarExistenciaDeIdentificador(tablaSimb,$1);
+          | ID                     {
+                                      validarExistenciaDeIdentificador(tablaSimb,$1,yylineno);
                                       $$ = creaLC();
                                       char* reg = obtenerReg();
                                       char *iden;
@@ -240,10 +236,10 @@ expresion : expresion "+" expresion   { printf("e->e+e\n");
                                       anade_operacion_lista_codigo($$,"lw",reg,iden,NULL);
                                       guardaResLC($$,reg);
                                     }
-          | "(" expresion ")"       { printf("e->(e)\n"); 
+          | "(" expresion ")"       { 
                                       $$ = $2;
                                      }
-          | "-" expresion           { printf("e->-e\n"); 
+          | "-" expresion           { 
                                       $$ = expresion_unop($2,"neg"); }
 
           | expresion LT  expresion  { $$ = expresion_relop($1,$3,"<");  }
@@ -261,7 +257,6 @@ void yyerror(const char *msg) {
 }
 
 void inicializar() {
-    printf("Creo la tabla\n");
     tablaSimb = creaLS();
     for(int i=0;i<n_registros;i++){
         registros_en_uso[i] = false;
@@ -417,7 +412,7 @@ void statementDoWhile(ListaC l, ListaC condicion, ListaC codigo){
     liberarReg(recuperaResLC(condicion));
 }
 ListaC statementFor(ListaC codigo_inicio,ListaC codigo_limite,ListaC codigo_actualizacion,ListaC codigo_bucle){
-    if(errores > 0) return;
+    if(errores > 0) return NULL;
     ListaC l = creaLC();
     char* eti1 = obtenerEtiq(); // Etiqueta para iterar otra vez el bucle
     char* eti2 = obtenerEtiq(); //Etiqueta para salir del bucle
@@ -495,7 +490,6 @@ char* obtenerReg(){
             char* buff;
             asprintf(&buff,"$t%d",i);
             registros_en_uso[i] = true;
-            printf("Te quito el t%d\n",i);
             return buff;
         }
     }
@@ -507,7 +501,6 @@ char* obtenerEtiq(){
     return etiq;
 }
 void liberarReg(char* i_str){
-    printf("Voy a liberar el reg %s",i_str);
     int i = i_str[2] - '0';
     if(!registros_en_uso[i]){
         printf("Se ha intentado liberar un registro no usado\n");
@@ -519,32 +512,32 @@ void liberarReg(char* i_str){
 bool isNombreDeSimboloEnLista(Lista lista, char * nombre){
     return !(buscaLS(lista,nombre) == finalLS(lista));
 }
-bool validarNoConstanteIdentificador(Lista lista, char *nombre){
+bool validarNoConstanteIdentificador(Lista lista, char *nombre,int linea){
     PosicionLista p = buscaLS(lista,nombre);
     if(p == finalLS(lista)){
-        printf("ERROR: La variable %s ha sido asignada sin ser declarada\n",nombre);
+        printf("ERROR: La variable %s ha sido asignada sin ser declarada en la linea %d\n",nombre,linea);
         errores++;
         return false;
     }
     if(recuperaLS(lista,p).tipo == CONSTANTE){
-        printf("ERROR: La variable %s es constante y ha sido reasignada\n",nombre);
+        printf("ERROR: La variable %s es constante y ha sido reasignada en la linea %d\n",nombre,linea);
         errores++;
         return false;
     }
     return true;
 }
-bool validarExistenciaDeIdentificador(Lista lista, char *nombre){
+bool validarExistenciaDeIdentificador(Lista lista, char *nombre, int linea){
     PosicionLista p = buscaLS(lista,nombre);
     if(p == finalLS(lista)){
-        printf("ERROR: La variable %s ha intentado ser leida sin ser declarada\n",nombre);
+        printf("ERROR: La variable %s ha intentado ser leida sin ser declarada en la linea %d\n",nombre,linea);
         return false;
     }
     return true;
 }
 
-Simbolo insertaSimboloEnLista(Lista tablaSimb,char *nombre, Tipo tipo, int valor){
+Simbolo insertaSimboloEnLista(Lista tablaSimb,char *nombre, Tipo tipo, int valor,int linea){
     if(isNombreDeSimboloEnLista(tablaSimb,nombre)){
-        printf("La variable %s ya ha sido declarada anteriormente\n",nombre);
+        printf("La variable %s ya ha sido declarada anteriormente en la linea %d\n",nombre,linea);
     }
     Simbolo s;
     s.nombre = malloc(strlen(nombre)+1);

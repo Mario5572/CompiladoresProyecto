@@ -3,6 +3,8 @@
     #include "sintaxis.tab.h"
     #include <stdio.h>    
     #include <stdlib.h>
+    extern int errores;
+    extern void finalizarYGenerarCodigo(ListaC l);
 %}
 
 letra [a-zA-Z]
@@ -27,7 +29,9 @@ errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-\?:]+
 
 <comentario>"*/"    {BEGIN(INITIAL);}
 <comentario>(?s:.)  {} //No termino de entender esta expresion regular
-<comentario><<EOF>> {printf("Comentario sin cerrar: %d\n",yylineno);
+<comentario><<EOF>> {printf("Comentario sin cerrar en linea: %d\n",yylineno);
+                    errores++;
+                    finalizarYGenerarCodigo(NULL);
                     return 0;
                     }
 
@@ -68,6 +72,7 @@ errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-\?:]+
 ({letra}|_)({letra}|{digito}|_)* {
     if(strlen(yytext) > 32){
         printf("Identificador demasiado largo en la linea %d\n",yylineno);
+        errores++;
     }
     yylval.cadena = strdup(yytext);
     return ID;
@@ -75,13 +80,15 @@ errores [^ \n\t\ra-zA-Z_$0-9(){},;=/+*\-\?:]+
 {digito}+   {
     if(atol(yytext) > 2147483648){
         printf("Entero demasiado largo en linea %d\n",yylineno);
+        errores++;
     }
     yylval.cadena = strdup(yytext);
     return NUM;
 }
-\"([^"\n\\]|\\.)*   {printf("Cadena sin cerrar en linea %d\n",yylineno);}
+\"([^"\n\\]|\\.)*   {printf("Cadena sin cerrar en linea %d\n",yylineno);
+                     errores++;}
 
-{errores}          {printf("Error en linea %d: %s\n",yylineno, yytext);}
-
+{errores}          {printf("Error en linea %d: %s\n",yylineno, yytext);
+                    errores++;}
 
 %%

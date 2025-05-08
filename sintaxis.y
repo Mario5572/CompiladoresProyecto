@@ -253,6 +253,7 @@ expresion : expresion "+" expresion   {
 %%
 
 void yyerror(const char *msg) {
+    errores++;
     printf("Error en linea %d: %s\n", yylineno, msg);
 }
 
@@ -626,7 +627,6 @@ void imprimirLC(ListaC codigo){
   printf("syscall");
 }
 void finalizarYGenerarCodigo(ListaC l){
-    mostrarListaSimbolos(tablaSimb);
     printf("\n\n -------------HA HABIDO %d ERRORES-----------------\n\n", errores);
     if (errores == 0){
         if (!freopen("output.asm","w", stdout)) {

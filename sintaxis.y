@@ -2,6 +2,7 @@
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
+    #include <unistd.h>   
     extern int yylex();
     extern int yylineno;   
     void yyerror(const char *msg); 
@@ -19,11 +20,9 @@
     ListaC expresion_binop(ListaC l1,ListaC l2,char *op);
     ListaC expresion_unop(ListaC l1,char *op);
     ListaC statement_asig(char* iden, ListaC l1);
-    ListaC cargaStringEnRegistro(int string_identifier, char* reg);
-    char * cargaDireccionDeIdentificadorAUnRegistro(ListaC l1,char * ident);
     void imprimirLC(ListaC codigo);
-    void imprimirRegistro(ListaC l1, char* reg);
-    void imprimirFromMemoria(ListaC l1, char* ident);
+    ListaC imprimirExpresion(ListaC l1);
+    ListaC imprimirFromMemoria(ListaC l1, char* ident);
     void leerIdentificador(ListaC l1,char* iden);
     void statementIf(ListaC l,ListaC expresion,ListaC statement);
     void statementIfElse(ListaC l,ListaC expresion,ListaC ltrue,ListaC lfalse);
@@ -180,7 +179,7 @@ asignation        :
                     }
 
 print_list    : print_item { $$ = $1;}
-              | print_list "," print_item {printf("print_list -> print_list , print_item\n"); if (errores == 0) concatenaLC($1,$3); $$ = $1;}
+              | print_list "," print_item { if (errores == 0) concatenaLC($1,$3); $$ = $1;}
               ;
 
 print_item    : expresion  { imprimirRegistro($1,recuperaResLC($1));
@@ -191,7 +190,7 @@ print_item    : expresion  { imprimirRegistro($1,recuperaResLC($1));
                             $$ = creaLC();
                             char* ident;
                             asprintf(&ident,"$str%d",s.valor);
-                            imprimirFromMemoria($$,ident);
+                            $$ = imprimirFromMemoria($$,ident);
                             }
 
               ;
@@ -262,6 +261,11 @@ void inicializar() {
     for(int i=0;i<n_registros;i++){
         registros_en_uso[i] = false;
     }
+    //Voy a vaciar el archivo de salida para que no se acumulen los errores de compilacion
+   if (truncate("output.asm", 0) != 0) {
+        perror("No pudo vaciar output.asm");
+        exit(1);
+    }
 }
 
 void anade_operacion_lista_codigo(ListaC lc,char* op,char* reg,char* arg1,char* arg2){
@@ -294,28 +298,8 @@ ListaC statement_asig(char* iden, ListaC l1){
     liberarReg(recuperaResLC(l1)); // Creo que tambien puedo liberar este registro que el que almacena el valor de la expresion
     return l1;
 }
-char * cargaDireccionDeIdentificadorAUnRegistro(ListaC l1,char * ident){
-    /*Busca un registro para cargar la direccion de memoria de un identificador, lo concatena a la lista de codigo y devuelve el registro */
-    // Esta funcion es innecesaria puesto que existe la pseudo instruccion sw $t0, _hola que ya carga automaticamente la direccion de memoria de _hola
-    Operacion cargarMem;
-    cargarMem.op = "la";
-    char* registro = obtenerReg();
-    cargarMem.res = registro;
-    asprintf(&cargarMem.arg1,"_%s",ident);
-    cargarMem.arg2 = 0;
-    insertaLC(l1,finalLC(l1),cargarMem);
-    return registro;
-}
-ListaC cargaStringEnRegistro(int string_identifier, char* reg){
-    ListaC l1 = creaLC();
-    Operacion oper;
-    oper.op = "la";
-    asprintf(&oper.arg1,"$str%d",string_identifier);
-    guardaResLC(l1,reg);
-    return l1;
-}
-void imprimirFromMemoria(ListaC l1, char* ident){
-
+ListaC imprimirFromMemoria(ListaC l1, char* ident){
+    l1 = creaLC();
     //Movemos el valor de memoria a $a0
     Operacion op1 = creaOp("la","$a0",0,0);
     asprintf(&op1.arg1,"%s",ident);
@@ -326,12 +310,12 @@ void imprimirFromMemoria(ListaC l1, char* ident){
     //Finalmente hacemos un syscall
     Operacion op3 = creaOp("syscall",0,0,0);
     insertaLC(l1,finalLC(l1),op3);
+    return l1;
 }
-void imprimirRegistro(ListaC l1, char* reg){
-
+ListaC imprimirExpresion(ListaC l1){
     //Movemos el valor del registro a $a0
     Operacion op1 = creaOp("move","$a0",0,0);
-    asprintf(&op1.arg1,"%s",reg);
+    asprintf(&op1.arg1,"%s",recuperaResLC(l1));
     insertaLC(l1,finalLC(l1),op1);
     //Movemos el valor 4 al registro $v0
     Operacion op2 = creaOp("li","$v0","1",0);
@@ -339,6 +323,7 @@ void imprimirRegistro(ListaC l1, char* reg){
     //Finalmente hacemos un syscall
     Operacion op3 = creaOp("syscall",0,0,0);
     insertaLC(l1,finalLC(l1),op3);
+    return l1;
 }
 void leerIdentificador(ListaC l1,char* iden){
     Operacion op1 = creaOp("li","$v0","5",0);

@@ -182,7 +182,7 @@ print_list    : print_item { $$ = $1;}
               | print_list "," print_item { if (errores == 0) concatenaLC($1,$3); $$ = $1;}
               ;
 
-print_item    : expresion  { imprimirRegistro($1,recuperaResLC($1));
+print_item    : expresion  { imprimirExpresion($1);
                                                                           liberarReg(recuperaResLC($1));
                                                                           $$ = $1;}
               | STRING     {

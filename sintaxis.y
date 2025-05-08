@@ -2,6 +2,7 @@
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
+    #include <unistd.h>   
     extern int yylex();
     extern int yylineno;   
     void yyerror(const char *msg); 
@@ -263,6 +264,11 @@ void inicializar() {
     for(int i=0;i<n_registros;i++){
         registros_en_uso[i] = false;
     }
+    //Voy a vaciar el archivo de salida para que no se acumulen los errores de compilacion
+   if (truncate("output.asm", 0) != 0) {
+        perror("No pudo vaciar output.asm");
+        exit(1);
+    }
 }
 
 void anade_operacion_lista_codigo(ListaC lc,char* op,char* reg,char* arg1,char* arg2){
@@ -482,7 +488,6 @@ char* obtenerEtiq(){
     return etiq;
 }
 void liberarReg(char* i_str){
-    printf("Voy a liberar el reg %s",i_str);
     int i = i_str[2] - '0';
     if(!registros_en_uso[i]){
         printf("Se ha intentado liberar un registro no usado\n");

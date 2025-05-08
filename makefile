@@ -14,4 +14,4 @@ run : ProyectoCompiladores prueba.txt
 	./ProyectoCompiladores prueba.txt
 
 exec : prueba.txt ProyectoCompiladores
-	./ProyectoCompiladores prueba.txt > output.asm && java -jar Mars.jar output.asm
+	./ProyectoCompiladores prueba.txt && java -jar Mars.jar output.asm
